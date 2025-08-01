@@ -2,7 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const whatsappApiKey = Deno.env.get('WHATSAPP_API_KEY');
+const whatsappAccessToken = Deno.env.get('WHATSAPP_API_KEY');
+const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,17 +18,9 @@ serve(async (req) => {
   try {
     const { message, chipName, isInitiatedByBot, phoneNumber, sendMessage } = await req.json();
 
-    // Validate WhatsApp API key format
-    if (!whatsappApiKey) {
-      return new Response(JSON.stringify({ error: 'WhatsApp API key not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const keyPattern = /^HX[0-9a-fA-F]{32}$/;
-    if (!keyPattern.test(whatsappApiKey)) {
-      return new Response(JSON.stringify({ error: 'Invalid WhatsApp API key format' }), {
+    // Validate WhatsApp Business API access token
+    if (!whatsappAccessToken) {
+      return new Response(JSON.stringify({ error: 'WhatsApp Business API access token not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -74,29 +67,44 @@ serve(async (req) => {
     
     const botResponse = data.choices[0].message.content;
 
-    // Se sendMessage for true, enviar a mensagem via WhatsApp API
-    if (sendMessage && phoneNumber) {
+    // Se sendMessage for true, enviar a mensagem via WhatsApp Business API oficial
+    if (sendMessage && phoneNumber && phoneNumberId) {
       try {
-        const whatsappResponse = await fetch('https://api.whatsapp.com/send', {
+        // Endpoint oficial da API do WhatsApp Business
+        const whatsappApiUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+        
+        const whatsappResponse = await fetch(whatsappApiUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${whatsappApiKey}`,
+            'Authorization': `Bearer ${whatsappAccessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
             to: phoneNumber,
-            text: { body: botResponse }
+            type: 'text',
+            text: { 
+              body: botResponse 
+            }
           }),
         });
 
+        const whatsappData = await whatsappResponse.json();
+
         if (!whatsappResponse.ok) {
-          console.error('WhatsApp API error:', await whatsappResponse.text());
+          console.error('WhatsApp Business API error:', whatsappData);
+          throw new Error(`WhatsApp API error: ${whatsappData.error?.message || 'Unknown error'}`);
         }
 
-        console.log(`Message sent via WhatsApp to ${phoneNumber}: ${botResponse}`);
+        console.log(`Message sent via WhatsApp Business API to ${phoneNumber}:`, whatsappData);
       } catch (whatsappError) {
         console.error('Error sending WhatsApp message:', whatsappError);
+        return new Response(JSON.stringify({ 
+          error: `Failed to send WhatsApp message: ${whatsappError.message}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
