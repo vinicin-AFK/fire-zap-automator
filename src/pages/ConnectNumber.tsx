@@ -194,10 +194,10 @@ const ConnectNumber = () => {
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2">
                 <QrCode className="h-5 w-5" />
-                Escaneie o QR Code
+                QR Code de Demonstração
               </CardTitle>
               <CardDescription>
-                Use seu WhatsApp para escanear o código abaixo
+                <strong>Nota:</strong> Este é um QR code de demonstração. Para conectar ao WhatsApp real, você precisa usar a API oficial do WhatsApp Business.
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -226,11 +226,18 @@ const ConnectNumber = () => {
               </Button>
               
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground space-y-2">
-                  <p>1. Abra o WhatsApp no seu celular</p>
-                  <p>2. Vá em Configurações → Aparelhos conectados</p>
-                  <p>3. Toque em "Conectar um aparelho"</p>
-                  <p>4. Escaneie este código QR</p>
+                <div className="bg-muted/50 p-4 rounded-lg border border-yellow-200">
+                  <p className="text-sm font-medium text-yellow-800 mb-2">🚨 Modo de Demonstração</p>
+                  <p className="text-xs text-yellow-700">
+                    Este QR code não funcionará com o WhatsApp real. Use o botão "Simular Conexão" para testar a funcionalidade.
+                  </p>
+                </div>
+                
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p><strong>Para conexão real:</strong></p>
+                  <p>• Use WhatsApp Business API</p>
+                  <p>• Configure webhook oficial</p>
+                  <p>• Obtenha credenciais válidas</p>
                 </div>
                 
                 <Button 
