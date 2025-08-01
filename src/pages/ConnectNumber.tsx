@@ -268,65 +268,56 @@ const ConnectNumber = () => {
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2">
-                <QrCode className="h-5 w-5" />
-                Conectar WhatsApp Business
+                <Smartphone className="h-5 w-5" />
+                WhatsApp Business API
               </CardTitle>
               <CardDescription>
-                Conecte seu número à plataforma Fire Zap usando a API oficial do WhatsApp Business
+                Seu número será conectado via API oficial do WhatsApp Business
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="bg-white border-2 border-dashed border-border rounded-lg p-8 mb-6">
-                {qrCodeData ? (
-                  <img 
-                    src={qrCodeData} 
-                    alt="QR Code para conectar WhatsApp" 
-                    className="w-80 h-80 mx-auto rounded-lg shadow-lg"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                ) : (
-                  <div className="w-80 h-80 mx-auto bg-muted flex items-center justify-center rounded-lg">
-                    <QrCode className="h-32 w-32 text-muted-foreground animate-pulse" />
-                  </div>
-                )}
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-8 mb-6">
+                <div className="w-32 h-32 mx-auto bg-green-100 flex items-center justify-center rounded-full mb-4">
+                  <Smartphone className="h-16 w-16 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-green-800 mb-2">
+                  Pronto para conectar!
+                </h3>
+                <p className="text-sm text-green-700">
+                  Número: {formData.phone_number}
+                </p>
               </div>
               
-              <Button 
-                onClick={() => setQrCodeData("")}
-                variant="outline"
-                size="sm"
-                className="mb-4"
-              >
-                Gerar Novo QR Code
-              </Button>
-              
               <div className="space-y-4">
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-green-800 mb-2">✅ API Oficial Configurada</p>
-                  <p className="text-xs text-green-700">
-                    A integração está conectada à API oficial do WhatsApp Business. Sua conta já pode enviar e receber mensagens reais.
-                  </p>
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-800 mb-2">📱 Como funciona a API Business</p>
+                  <div className="text-xs text-blue-700 space-y-1 text-left">
+                    <p>• <strong>Não precisa de QR code</strong> - funciona direto pela API</p>
+                    <p>• <strong>Conexão automática</strong> - usando credenciais da Meta</p>
+                    <p>• <strong>Número verificado</strong> - pelo WhatsApp Business</p>
+                    <p>• <strong>Pronto para produção</strong> - envio real de mensagens</p>
+                  </div>
                 </div>
                 
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <p><strong>Status da integração:</strong></p>
-                  <p>• WhatsApp Business API ativa</p>
-                  <p>• Access Token configurado</p>
-                  <p>• Phone Number ID configurado</p>
-                  <p>• Pronto para uso em produção</p>
+                  <p><strong>Status da API:</strong></p>
+                  <p>✅ Access Token configurado</p>
+                  <p>✅ Phone Number ID configurado</p>
+                  <p>✅ Endpoint v19.0 ativo</p>
+                  <p>✅ Pronto para enviar mensagens</p>
                 </div>
                 
                 <Button 
                   onClick={() => {
                     simulateConnection();
                     toast({
-                      title: "Ativando conexão...",
-                      description: "Registrando número na plataforma.",
+                      title: "Ativando número...",
+                      description: "Registrando na plataforma Fire Zap.",
                     });
                   }}
                   className="w-full"
                 >
-                  Ativar Conexão
+                  Ativar Número na Plataforma
                 </Button>
                 
                 <Button 
