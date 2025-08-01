@@ -449,10 +449,15 @@ const Heating = () => {
 
     setIsHeating(true);
     
-    const interval = setInterval(() => {
+    // Variáveis para controlar a frequência
+    let messageCount = 0;
+    
+    const sendRandomMessage = () => {
+      messageCount++;
+      
       if (heatingMode === "bot") {
-        // 60% chance do chip iniciar, 40% do bot iniciar
-        const chipInitiates = Math.random() < 0.6;
+        // 70% chance do chip iniciar, 30% do bot iniciar (mais natural)
+        const chipInitiates = Math.random() < 0.7;
         
         if (chipInitiates) {
           const chipMessages = [
@@ -469,7 +474,23 @@ const Heating = () => {
             "Oi! Como foi o trabalho hoje?",
             "E aí! Tudo bem com você?",
             "Olá! Como está se sentindo?",
-            "Oi! Alguma novidade?"
+            "Oi! Alguma novidade?",
+            "Como foi o final de semana?",
+            "Tudo certo por aí?",
+            "Qual é a boa de hoje?",
+            "Como está o movimento?",
+            "Preparado para trabalhar?",
+            "Viu as novidades?",
+            "Como foram as vendas?",
+            "Tudo tranquilo no trabalho?",
+            "Que tal uma pausa?",
+            "Almoçou bem?",
+            "Como está a família?",
+            "Viu o jogo ontem?",
+            "Sol tá forte hoje né?",
+            "Bom dia! Café feito?",
+            "Como está o humor hoje?",
+            "Pronto para mais um dia?"
           ];
           const randomMessage = chipMessages[Math.floor(Math.random() * chipMessages.length)];
           sendMessageToBot(selectedChip, randomMessage, true);
@@ -485,18 +506,44 @@ const Heating = () => {
             "Olá! Como está se sentindo hoje?",
             "Hey! Alguma novidade boa?",
             "Oi! Como foi o trabalho? 💼",
-            "Olá! Tudo certo com você?"
+            "Olá! Tudo certo com você?",
+            "Oi! Preparado para hoje? 🚀",
+            "Como foi o sono? Dormiu bem? 😴",
+            "E aí! Qual é o plano de hoje?",
+            "Oi! Como está o ânimo? 💪",
+            "Bom dia! Que tal o tempo? ⛅",
+            "Hey! Tudo nos conformes?",
+            "Oi! Como anda a vida? 🌟",
+            "Olá! Novidades por aí? 📰",
+            "Oi! Como está o trabalho hoje?",
+            "Hey! Tudo correndo bem?"
           ];
           const randomBotMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
           sendMessageToBot(selectedChip, randomBotMessage, false);
         }
       } else if (heatingMode === "chip" && targetChip) {
-        // Alternar quem inicia a conversa
+        // Alternar quem inicia a conversa de forma mais natural
         const firstChip = Math.random() < 0.5 ? selectedChip : targetChip;
         const secondChip = firstChip === selectedChip ? targetChip : selectedChip;
         sendMessageBetweenChips(firstChip, secondChip);
       }
-    }, Math.random() * 8000 + 4000); // Intervalo reduzido: 4-12 segundos
+      
+      // Mostrar progresso do aquecimento
+      if (messageCount % 5 === 0) {
+        toast({
+          title: `🔥 Aquecimento ativo`,
+          description: `${messageCount} mensagens enviadas`,
+        });
+      }
+    };
+    
+    // Enviar primeira mensagem imediatamente
+    sendRandomMessage();
+    
+    // Configurar intervalo mais frequente e variável
+    const interval = setInterval(() => {
+      sendRandomMessage();
+    }, Math.random() * 4000 + 2000); // Intervalo reduzido: 2-6 segundos
 
     setHeatingInterval(interval);
     
