@@ -101,57 +101,73 @@ const ConnectNumber = () => {
         return;
       }
 
-      console.log('4. Tentando inserir na tabela chips...');
-      console.log('Dados que serão inseridos:', {
-        user_id: user.id,
-        name: formData.name,
-        phone_number: formData.phone_number,
-        status: "connecting",
-        connected: false,
-        messages_count: 0
-      });
-
-      const { data, error } = await supabase
+      // Verificar se o chip já existe
+      console.log('4. Verificando se chip já existe...');
+      const { data: existingChip } = await supabase
         .from("chips")
-        .insert({
-          user_id: user.id,
-          name: formData.name,
-          phone_number: formData.phone_number,
-          status: "connecting",
-          connected: false,
-          messages_count: 0
-        })
-        .select();
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("phone_number", formData.phone_number)
+        .maybeSingle();
 
-      console.log('5. Resultado da inserção:');
-      console.log('Data:', data);
-      console.log('Error:', error);
+      console.log('5. Chip existente:', existingChip);
 
-      if (error) {
-        console.error('6. ERRO ao inserir chip:', error);
-        console.error('Código do erro:', error.code);
-        console.error('Mensagem do erro:', error.message);
-        console.error('Detalhes do erro:', error.details);
-        
+      if (existingChip) {
+        console.log('6. Chip já existe, atualizando...');
+        const { error: updateError } = await supabase
+          .from("chips")
+          .update({
+            name: formData.name,
+            status: "connecting",
+            connected: false,
+            last_activity: new Date().toISOString()
+          })
+          .eq("id", existingChip.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar chip:', updateError);
+          throw updateError;
+        }
+
+        console.log('7. ✅ Chip atualizado com sucesso!');
         toast({
-          title: "Erro",
-          description: `Erro ao salvar número: ${error.message}`,
-          variant: "destructive",
+          title: "Número atualizado!",
+          description: "Chip reativado com sucesso.",
         });
       } else {
-        console.log('7. ✅ Chip inserido com sucesso!');
-        console.log('8. Definindo showQR = true...');
-        
+        console.log('8. Criando novo chip...');
+        const { data, error } = await supabase
+          .from("chips")
+          .insert({
+            user_id: user.id,
+            name: formData.name,
+            phone_number: formData.phone_number,
+            status: "connecting",
+            connected: false,
+            messages_count: 0
+          })
+          .select();
+
+        console.log('9. Resultado da inserção:', { data, error });
+
+        if (error) {
+          console.error('Erro ao inserir chip:', error);
+          throw error;
+        }
+
+        console.log('10. ✅ Novo chip criado com sucesso!');
         toast({
           title: "Número cadastrado!",
-          description: "Gerando QR Code para conectar.",
+          description: "Novo chip adicionado com sucesso.",
         });
-        
-        setShowQR(true);
-        console.log('9. ✅ ShowQR definido como true');
       }
+
+      console.log('11. Definindo showQR = true...');
+      setShowQR(true);
+      console.log('12. ✅ ShowQR definido como true');
+
     } catch (error) {
-      console.error('10. ERRO INESPERADO:', error);
+      console.error('13. ERRO INESPERADO:', error);
       console.error('Stack trace:', error.stack);
       
       toast({
