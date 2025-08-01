@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { useHybridAPI } from "@/hooks/useHybridAPI";
 import { useToast } from "@/hooks/use-toast";
 import { Smartphone, Building2, QrCode, Send } from "lucide-react";
 
@@ -24,9 +24,33 @@ export const HybridConnection = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [message, setMessage] = useState("");
   const { toast } = useToast();
+  const {
+    createPersonalSession,
+    connectPersonalSession,
+    sendPersonalMessage,
+    sendBusinessMessage,
+    connectWebSocket
+  } = useHybridAPI();
+
+  // Conectar WebSocket ao carregar
+  useEffect(() => {
+    const ws = connectWebSocket();
+    
+    const handleHybridUpdate = (event: any) => {
+      console.log('Atualização híbrida recebida:', event.detail);
+      // Atualizar estado das sessões com base nas atualizações
+    };
+    
+    window.addEventListener('hybrid-update', handleHybridUpdate);
+    
+    return () => {
+      ws?.close();
+      window.removeEventListener('hybrid-update', handleHybridUpdate);
+    };
+  }, []);
 
   // Criar sessão pessoal (Baileys)
-  const createPersonalSession = async () => {
+  const handleCreatePersonalSession = async () => {
     if (!sessionName.trim()) {
       toast({
         title: "Erro",
@@ -38,18 +62,16 @@ export const HybridConnection = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('baileys-session/create', {
-        body: { sessionId: sessionName }
-      });
+      const result = await createPersonalSession(sessionName);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
-      setSessions(prev => [...prev, data.session]);
+      setSessions(prev => [...prev, result.data.session]);
       setSessionName("");
       
       toast({
         title: "Sessão Criada",
-        description: `Sessão pessoal "${data.session.id}" criada com sucesso!`
+        description: `Sessão pessoal "${result.data.session.id}" criada com sucesso!`
       });
     } catch (error: any) {
       toast({
@@ -63,20 +85,18 @@ export const HybridConnection = () => {
   };
 
   // Conectar sessão pessoal
-  const connectPersonalSession = async (sessionId: string) => {
+  const handleConnectPersonalSession = async (sessionId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('baileys-session/connect', {
-        body: { sessionId }
-      });
+      const result = await connectPersonalSession(sessionId);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: "Conectando",
         description: "Escaneie o QR code no WhatsApp para conectar"
       });
 
-      // Simular conexão após alguns segundos
+      // Atualizar UI após conexão simulada
       setTimeout(() => {
         setSessions(prev => prev.map(session => 
           session.id === sessionId 
@@ -100,7 +120,7 @@ export const HybridConnection = () => {
   };
 
   // Enviar mensagem pessoal
-  const sendPersonalMessage = async (sessionId: string) => {
+  const handleSendPersonalMessage = async (sessionId: string) => {
     if (!phoneNumber || !message) {
       toast({
         title: "Erro",
@@ -111,11 +131,9 @@ export const HybridConnection = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('baileys-session/send', {
-        body: { sessionId, number: phoneNumber, message }
-      });
+      const result = await sendPersonalMessage(sessionId, phoneNumber, message);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: "Mensagem Enviada",
@@ -134,7 +152,7 @@ export const HybridConnection = () => {
   };
 
   // Enviar mensagem business
-  const sendBusinessMessage = async () => {
+  const handleSendBusinessMessage = async () => {
     if (!phoneNumber || !message) {
       toast({
         title: "Erro",
@@ -145,11 +163,9 @@ export const HybridConnection = () => {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('business-api', {
-        body: { number: phoneNumber, message }
-      });
+      const result = await sendBusinessMessage(phoneNumber, message);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: "Mensagem Enviada",
@@ -207,7 +223,7 @@ export const HybridConnection = () => {
                   onChange={(e) => setSessionName(e.target.value)}
                 />
                 <Button 
-                  onClick={createPersonalSession}
+                  onClick={handleCreatePersonalSession}
                   disabled={isLoading}
                 >
                   Criar Sessão
@@ -231,7 +247,7 @@ export const HybridConnection = () => {
                         {!session.connected && (
                           <Button
                             size="sm"
-                            onClick={() => connectPersonalSession(session.id)}
+                            onClick={() => handleConnectPersonalSession(session.id)}
                           >
                             <QrCode className="w-4 h-4 mr-1" />
                             Conectar
@@ -240,7 +256,7 @@ export const HybridConnection = () => {
                         {session.connected && (
                           <Button
                             size="sm"
-                            onClick={() => sendPersonalMessage(session.id)}
+                            onClick={() => handleSendPersonalMessage(session.id)}
                           >
                             <Send className="w-4 h-4 mr-1" />
                             Enviar
@@ -296,7 +312,7 @@ export const HybridConnection = () => {
                 </div>
               </div>
               <Button 
-                onClick={sendBusinessMessage}
+                onClick={handleSendBusinessMessage}
                 className="w-full"
               >
                 <Send className="w-4 h-4 mr-2" />
