@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import ConnectNumber from "./pages/ConnectNumber";
 import VerifyCredentials from "./pages/VerifyCredentials";
 import Heating from "./pages/Heating";
+import HybridDashboard from "./pages/HybridDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/connect-number" element={<ConnectNumber />} />
           <Route path="/verify-credentials" element={<VerifyCredentials />} />
           <Route path="/heating" element={<Heating />} />
+          <Route path="/hybrid" element={<HybridDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

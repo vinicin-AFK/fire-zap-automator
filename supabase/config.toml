@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+[functions.baileys-session]
+verify_jwt = false
+
+[functions.hybrid-websocket]
+verify_jwt = false
+
+[functions.business-api]
+verify_jwt = false
