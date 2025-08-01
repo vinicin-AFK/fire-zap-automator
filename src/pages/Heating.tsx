@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Flame, Bot, MessageCircle, Play, Square, Clock } from "lucide-react";
+import { ArrowLeft, Flame, Bot, MessageCircle, Play, Square, Clock, MessageSquare } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { MessagesSidebar } from "@/components/MessagesSidebar";
 import type { User } from "@supabase/supabase-js";
 
 interface Chip {
@@ -528,198 +530,171 @@ const Heating = () => {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <div className="flex items-center gap-2">
-            <Flame className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Aquecimento de Chips</h1>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Configuração de Aquecimento */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flame className="h-5 w-5" />
-                Configurar Aquecimento
-              </CardTitle>
-              <CardDescription>
-                Configure o aquecimento dos seus chips do WhatsApp
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {chips.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Nenhum chip conectado. 
-                    <Button variant="link" onClick={() => navigate("/connect-number")}>
-                      Conecte um chip primeiro
-                    </Button>
-                  </p>
+    <SidebarProvider>
+      <div className="min-h-screen bg-background w-full flex">
+        {/* Conteúdo principal */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="border-b bg-card">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Flame className="h-6 w-6 text-primary" />
+                  <h1 className="text-xl font-bold">Aquecimento de Chips</h1>
                 </div>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Chip para Aquecer</label>
-                    <Select value={selectedChip} onValueChange={setSelectedChip}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um chip" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {chips.map((chip) => (
-                          <SelectItem key={chip.id} value={chip.id}>
-                            {chip.name} ({chip.phone_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              </div>
+              
+              {/* Botão para abrir/fechar sidebar de mensagens */}
+              <div className="flex items-center gap-2">
+                <SidebarTrigger>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Mensagens
+                </SidebarTrigger>
+              </div>
+            </div>
+          </header>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Modo de Aquecimento</label>
-                    <Select value={heatingMode} onValueChange={(value: "bot" | "chip") => setHeatingMode(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o modo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bot">
-                          <div className="flex items-center gap-2">
-                            <Bot className="h-4 w-4" />
-                            Conversar com Bot IA
-                          </div>
-                        </SelectItem>
-                        {chips.length > 1 && (
-                          <SelectItem value="chip">
-                            <div className="flex items-center gap-2">
-                              <MessageCircle className="h-4 w-4" />
-                              Chip para Chip
-                            </div>
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {heatingMode === "chip" && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Chip de Destino</label>
-                      <Select value={targetChip} onValueChange={setTargetChip}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o chip de destino" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {chips.filter(chip => chip.id !== selectedChip).map((chip) => (
-                            <SelectItem key={chip.id} value={chip.id}>
-                              {chip.name} ({chip.phone_number})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-4">
-                    {!isHeating ? (
-                      <Button onClick={startHeating} className="flex-1 shadow-fire">
-                        <Play className="h-4 w-4 mr-2" />
-                        Iniciar Aquecimento
-                      </Button>
-                    ) : (
-                      <Button onClick={stopHeating} variant="destructive" className="flex-1">
-                        <Square className="h-4 w-4 mr-2" />
-                        Parar Aquecimento
-                      </Button>
-                    )}
-                  </div>
-
-                  {isHeating && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Clock className="h-4 w-4 animate-pulse" />
-                      Aquecimento em andamento...
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Log de Mensagens */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Log de Mensagens
-              </CardTitle>
-              <CardDescription>
-                Acompanhe as mensagens sendo enviadas em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 h-96 overflow-y-auto">
-                {messages.length === 0 ? (
+          {/* Conteúdo principal */}
+          <div className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+            {/* Configuração de Aquecimento - agora ocupa toda a largura */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="h-5 w-5" />
+                  Configurar Aquecimento
+                </CardTitle>
+                <CardDescription>
+                  Configure o aquecimento dos seus chips do WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {chips.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Nenhuma mensagem ainda
+                    <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Nenhum chip conectado. 
+                      <Button variant="link" onClick={() => navigate("/connect-number")}>
+                        Conecte um chip primeiro
+                      </Button>
                     </p>
                   </div>
                 ) : (
-                  messages.map((message) => {
-                    const fromChip = chips.find(c => c.id === message.from_chip_id);
-                    const isFromBot = message.from_chip_id === "bot";
-                    const isToBot = message.to_chip_id === "bot";
-                    
-                    return (
-                      <div key={message.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            {isFromBot ? (
-                              <Badge variant="secondary">
-                                <Bot className="h-3 w-3 mr-1" />
-                                Bot IA
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">
-                                {fromChip?.name || "Chip"}
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">→</span>
-                            {isToBot ? (
-                              <Badge variant="secondary">
-                                <Bot className="h-3 w-3 mr-1" />
-                                Bot IA
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">
-                                {chips.find(c => c.id === message.to_chip_id)?.name || "Chip"}
-                              </Badge>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(message.sent_at).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <p className="text-sm">{message.content}</p>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Chip para Aquecer</label>
+                        <Select value={selectedChip} onValueChange={setSelectedChip}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um chip" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {chips.map((chip) => (
+                              <SelectItem key={chip.id} value={chip.id}>
+                                {chip.name} ({chip.phone_number})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    );
-                  })
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Modo de Aquecimento</label>
+                        <Select value={heatingMode} onValueChange={(value: "bot" | "chip") => setHeatingMode(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o modo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bot">
+                              <div className="flex items-center gap-2">
+                                <Bot className="h-4 w-4" />
+                                Conversar com Bot IA
+                              </div>
+                            </SelectItem>
+                            {chips.length > 1 && (
+                              <SelectItem value="chip">
+                                <div className="flex items-center gap-2">
+                                  <MessageCircle className="h-4 w-4" />
+                                  Chip para Chip
+                                </div>
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {heatingMode === "chip" && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Chip de Destino</label>
+                        <Select value={targetChip} onValueChange={setTargetChip}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o chip de destino" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {chips.filter(chip => chip.id !== selectedChip).map((chip) => (
+                              <SelectItem key={chip.id} value={chip.id}>
+                                {chip.name} ({chip.phone_number})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-4">
+                      {!isHeating ? (
+                        <Button onClick={startHeating} className="flex-1 shadow-fire">
+                          <Play className="h-4 w-4 mr-2" />
+                          Iniciar Aquecimento
+                        </Button>
+                      ) : (
+                        <Button onClick={stopHeating} variant="destructive" className="flex-1">
+                          <Square className="h-4 w-4 mr-2" />
+                          Parar Aquecimento
+                        </Button>
+                      )}
+                    </div>
+
+                    {isHeating && (
+                      <div className="flex items-center gap-2 text-sm text-primary">
+                        <Clock className="h-4 w-4 animate-pulse" />
+                        Aquecimento em andamento...
+                      </div>
+                    )}
+
+                    {/* Estatísticas dos chips */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t">
+                      {chips.map((chip) => (
+                        <div key={chip.id} className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-sm">{chip.name}</h4>
+                            <Badge variant={chip.connected ? "default" : "secondary"}>
+                              {chip.connected ? "Conectado" : "Desconectado"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">{chip.phone_number}</p>
+                          <div className="flex items-center gap-2 text-xs">
+                            <MessageCircle className="h-3 w-3" />
+                            {chip.messages_count} mensagens
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
+        {/* Sidebar de mensagens */}
+        <MessagesSidebar messages={messages} chips={chips} />
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
