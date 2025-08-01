@@ -115,15 +115,27 @@ const Heating = () => {
     }
   };
 
-  const sendMessageToBot = async (chipId: string, message: string) => {
+  const sendMessageToBot = async (chipId: string, message: string, isInitiatedByChip = true) => {
     const chip = chips.find(c => c.id === chipId);
     if (!chip) return;
 
     try {
+      // Se a mensagem foi iniciada pelo chip, enviar primeiro a mensagem do chip
+      if (isInitiatedByChip) {
+        await supabase.from("messages").insert({
+          user_id: user?.id,
+          from_chip_id: chipId,
+          to_chip_id: "bot",
+          content: message,
+          status: "sent"
+        });
+      }
+
       const response = await supabase.functions.invoke('whatsapp-bot', {
         body: { 
           message: message,
-          chipName: chip.name 
+          chipName: chip.name,
+          isInitiatedByBot: !isInitiatedByChip
         }
       });
 
@@ -134,36 +146,78 @@ const Heating = () => {
 
       const botResponse = response.data?.response || "Olá! 👋";
       
-      // Salvar mensagem do chip para o bot
-      await supabase.from("messages").insert({
-        user_id: user?.id,
-        from_chip_id: chipId,
-        to_chip_id: "bot",
-        content: message,
-        status: "sent"
-      });
-
-      // Simular resposta do bot após um delay
+      // Simular digitação e resposta do bot
       setTimeout(async () => {
-        await supabase.from("messages").insert({
-          user_id: user?.id,
-          from_chip_id: "bot",
-          to_chip_id: chipId,
-          content: botResponse,
-          status: "sent"
-        });
+        // Se o bot iniciou a conversa, primeiro ele fala
+        if (!isInitiatedByChip) {
+          await supabase.from("messages").insert({
+            user_id: user?.id,
+            from_chip_id: "bot",
+            to_chip_id: chipId,
+            content: botResponse,
+            status: "sent"
+          });
 
-        // Atualizar contador de mensagens
-        await supabase
-          .from("chips")
-          .update({ 
-            messages_count: chip.messages_count + 1,
-            last_activity: new Date().toISOString()
-          })
-          .eq("id", chipId);
+          // Depois o chip responde
+          setTimeout(async () => {
+            const chipResponses = [
+              "Oi! Tudo bem sim! 😊",
+              "Olá! Como você está?",
+              "Oi bot! Tudo ótimo!",
+              "Hey! Obrigado por perguntar! 👍",
+              "Oi! Tudo certo por aqui!",
+              "Olá! Sempre bem! E você?",
+              "Oi! Dia produtivo hoje! 💪",
+              "Hey! Tudo tranquilo! 😄",
+              "Oi! Trabalhando firme! 🚀",
+              "Olá! Tudo em ordem! ✅"
+            ];
+            
+            const chipResponse = chipResponses[Math.floor(Math.random() * chipResponses.length)];
+            
+            await supabase.from("messages").insert({
+              user_id: user?.id,
+              from_chip_id: chipId,
+              to_chip_id: "bot",
+              content: chipResponse,
+              status: "sent"
+            });
 
-        loadMessages();
-        loadChips();
+            // Atualizar contador (2 mensagens)
+            await supabase
+              .from("chips")
+              .update({ 
+                messages_count: chip.messages_count + 2,
+                last_activity: new Date().toISOString()
+              })
+              .eq("id", chipId);
+
+            loadMessages();
+            loadChips();
+          }, Math.random() * 3000 + 1500);
+
+        } else {
+          // Caso normal: chip fala, bot responde
+          await supabase.from("messages").insert({
+            user_id: user?.id,
+            from_chip_id: "bot",
+            to_chip_id: chipId,
+            content: botResponse,
+            status: "sent"
+          });
+
+          // Atualizar contador (1 mensagem extra, já que a do chip foi enviada antes)
+          await supabase
+            .from("chips")
+            .update({ 
+              messages_count: chip.messages_count + 2,
+              last_activity: new Date().toISOString()
+            })
+            .eq("id", chipId);
+
+          loadMessages();
+          loadChips();
+        }
       }, Math.random() * 3000 + 1000); // Delay de 1-4 segundos
 
     } catch (error) {
@@ -177,7 +231,7 @@ const Heating = () => {
     
     if (!fromChip || !toChip) return;
 
-    const conversations = [
+    const conversationStarters = [
       "Oi! Como você está?",
       "Tudo bem por aí? 😊",
       "E aí, como foram as vendas hoje?",
@@ -187,7 +241,17 @@ const Heating = () => {
       "Ei! Tudo certo com você?",
       "Fala! Como estão as coisas?",
       "Oi! Preparado para trabalhar? 💪",
-      "Salve! Qual é a boa de hoje?"
+      "Salve! Qual é a boa de hoje?",
+      "Hey! Como foi o final de semana?",
+      "Bom dia! Café da manhã feito? ☕",
+      "Oi! Viu o jogo ontem?",
+      "E aí! Como está a família?",
+      "Olá! Animado para hoje? 🚀",
+      "Fala! Tudo tranquilo no trabalho?",
+      "Oi! Que tal uma pausa? 😄",
+      "Hey! Novidades por aí?",
+      "Bom dia! Sol tá forte hoje ☀️",
+      "E aí! Almoçou bem? 🍽️"
     ];
 
     const responses = [
@@ -200,57 +264,145 @@ const Heating = () => {
       "Tudo certo! Obrigado! 😊",
       "Tudo bem! Trabalhando firme! 💼",
       "Sempre preparado! Vamos que vamos! 🎯",
-      "A boa é trabalhar! E você? 😎"
+      "A boa é trabalhar! E você? 😎",
+      "Foi ótimo! Descansou bem! 😴",
+      "Já sim! E você? Como está? ☕",
+      "Vi! Que jogo! E você viu? ⚽",
+      "Todos bem, obrigado! E a sua? 👨‍👩‍👧‍👦",
+      "Sempre animado! Bora trabalhar! 💪",
+      "Tudo suave! E você, como está? 😊",
+      "Boa ideia! Vamos fazer isso! ⏰",
+      "Sempre tem! E por aí? 📰",
+      "Verdade! Dia lindo! Como está? 🌞",
+      "Almocei bem! E você? O que comeu? 🥗"
+    ];
+
+    const followUpQuestions = [
+      "E como está o trabalho?",
+      "Alguma novidade boa?",
+      "O que você acha de fazermos aquela reunião?",
+      "Viu as vendas de hoje?",
+      "Tá com algum plano para hoje?",
+      "Como estão os clientes por aí?",
+      "Conseguiu resolver aquela pendência?",
+      "O que achou das mudanças?",
+      "Tá precisando de alguma ajuda?",
+      "Vamos almoçar juntos hoje?"
+    ];
+
+    const followUpAnswers = [
+      "Trabalho tá correndo bem! 💼",
+      "Sempre tem novidade boa! 😊",
+      "Boa ideia! Vamos marcar sim! 📅",
+      "Vi sim! Estão boas! 📈",
+      "Tenho alguns planos! E você? 🎯",
+      "Clientes estão satisfeitos! 👥",
+      "Consegui resolver! Obrigado! ✅",
+      "Achei interessante! E você? 🤔",
+      "Por enquanto não! Mas obrigado! 🙏",
+      "Vamos sim! Onde você quer ir? 🍴"
     ];
 
     try {
-      const message = conversations[Math.floor(Math.random() * conversations.length)];
-      const response = responses[Math.floor(Math.random() * responses.length)];
+      const isFollowUp = Math.random() < 0.3; // 30% chance de ser uma conversa de continuação
+      
+      let initialMessage, responseMessage, followUpMsg = null, followUpResp = null;
 
-      // Enviar mensagem do primeiro chip
+      if (isFollowUp) {
+        initialMessage = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+        responseMessage = followUpAnswers[Math.floor(Math.random() * followUpAnswers.length)];
+      } else {
+        initialMessage = conversationStarters[Math.floor(Math.random() * conversationStarters.length)];
+        responseMessage = responses[Math.floor(Math.random() * responses.length)];
+        
+        // 40% chance de ter uma pergunta de follow-up
+        if (Math.random() < 0.4) {
+          followUpMsg = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+          followUpResp = followUpAnswers[Math.floor(Math.random() * followUpAnswers.length)];
+        }
+      }
+
+      // Enviar mensagem inicial
       await supabase.from("messages").insert({
         user_id: user?.id,
         from_chip_id: fromChipId,
         to_chip_id: toChipId,
-        content: message,
+        content: initialMessage,
         status: "sent"
       });
 
-      // Simular resposta do segundo chip
+      // Simular digitação e resposta
       setTimeout(async () => {
         await supabase.from("messages").insert({
           user_id: user?.id,
           from_chip_id: toChipId,
           to_chip_id: fromChipId,
-          content: response,
+          content: responseMessage,
           status: "sent"
         });
 
-        // Atualizar contadores
-        await Promise.all([
-          supabase
-            .from("chips")
-            .update({ 
-              messages_count: fromChip.messages_count + 1,
-              last_activity: new Date().toISOString()
-            })
-            .eq("id", fromChipId),
-          supabase
-            .from("chips")
-            .update({ 
-              messages_count: toChip.messages_count + 1,
-              last_activity: new Date().toISOString()
-            })
-            .eq("id", toChipId)
-        ]);
+        // Se tiver follow-up, enviar após outro delay
+        if (followUpMsg && followUpResp) {
+          setTimeout(async () => {
+            await supabase.from("messages").insert({
+              user_id: user?.id,
+              from_chip_id: fromChipId,
+              to_chip_id: toChipId,
+              content: followUpMsg,
+              status: "sent"
+            });
 
-        loadMessages();
-        loadChips();
-      }, Math.random() * 4000 + 2000); // Delay de 2-6 segundos
+            // Resposta final
+            setTimeout(async () => {
+              await supabase.from("messages").insert({
+                user_id: user?.id,
+                from_chip_id: toChipId,
+                to_chip_id: fromChipId,
+                content: followUpResp,
+                status: "sent"
+              });
+
+              await updateChipCounters(fromChipId, toChipId, 4); // 4 mensagens no total
+              loadMessages();
+              loadChips();
+            }, Math.random() * 3000 + 2000);
+
+          }, Math.random() * 4000 + 3000);
+        } else {
+          await updateChipCounters(fromChipId, toChipId, 2); // 2 mensagens
+          loadMessages();
+          loadChips();
+        }
+
+      }, Math.random() * 4000 + 2000); // Delay inicial de 2-6 segundos
 
     } catch (error) {
       console.error("Erro ao enviar mensagem entre chips:", error);
     }
+  };
+
+  const updateChipCounters = async (fromChipId: string, toChipId: string, messageCount: number) => {
+    const fromChip = chips.find(c => c.id === fromChipId);
+    const toChip = chips.find(c => c.id === toChipId);
+    
+    if (!fromChip || !toChip) return;
+
+    await Promise.all([
+      supabase
+        .from("chips")
+        .update({ 
+          messages_count: fromChip.messages_count + messageCount,
+          last_activity: new Date().toISOString()
+        })
+        .eq("id", fromChipId),
+      supabase
+        .from("chips")
+        .update({ 
+          messages_count: toChip.messages_count + messageCount,
+          last_activity: new Date().toISOString()
+        })
+        .eq("id", toChipId)
+    ]);
   };
 
   const startHeating = () => {
@@ -276,24 +428,52 @@ const Heating = () => {
     
     const interval = setInterval(() => {
       if (heatingMode === "bot") {
-        const messages = [
-          "Oi, tudo bem?",
-          "Como você está hoje?",
-          "Qual é a novidade?",
-          "Bom dia! Como estão as coisas?",
-          "E aí, como foi o dia?",
-          "Olá! Tudo certo?",
-          "Opa! Como anda tudo?",
-          "Oi! Que bom te ver online!",
-          "Fala! Tudo tranquilo?",
-          "Hey! Como você está?"
-        ];
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        sendMessageToBot(selectedChip, randomMessage);
+        // 60% chance do chip iniciar, 40% do bot iniciar
+        const chipInitiates = Math.random() < 0.6;
+        
+        if (chipInitiates) {
+          const chipMessages = [
+            "Oi, tudo bem?",
+            "Como você está hoje?",
+            "Qual é a novidade?",
+            "Bom dia! Como estão as coisas?",
+            "E aí, como foi o dia?",
+            "Olá! Tudo certo?",
+            "Opa! Como anda tudo?",
+            "Oi! Que bom te ver online!",
+            "Fala! Tudo tranquilo?",
+            "Hey! Como você está?",
+            "Oi! Como foi o trabalho hoje?",
+            "E aí! Tudo bem com você?",
+            "Olá! Como está se sentindo?",
+            "Oi! Alguma novidade?"
+          ];
+          const randomMessage = chipMessages[Math.floor(Math.random() * chipMessages.length)];
+          sendMessageToBot(selectedChip, randomMessage, true);
+        } else {
+          // Bot inicia a conversa
+          const botMessages = [
+            "Oi! Como você está hoje? 😊",
+            "Olá! Tudo bem por aí?",
+            "Oi! Como foi seu dia?",
+            "Hey! Tudo tranquilo?",
+            "Bom dia! Como estão as coisas? ☀️",
+            "Oi! Que bom falar com você!",
+            "Olá! Como está se sentindo hoje?",
+            "Hey! Alguma novidade boa?",
+            "Oi! Como foi o trabalho? 💼",
+            "Olá! Tudo certo com você?"
+          ];
+          const randomBotMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
+          sendMessageToBot(selectedChip, randomBotMessage, false);
+        }
       } else if (heatingMode === "chip" && targetChip) {
-        sendMessageBetweenChips(selectedChip, targetChip);
+        // Alternar quem inicia a conversa
+        const firstChip = Math.random() < 0.5 ? selectedChip : targetChip;
+        const secondChip = firstChip === selectedChip ? targetChip : selectedChip;
+        sendMessageBetweenChips(firstChip, secondChip);
       }
-    }, Math.random() * 10000 + 5000); // Intervalo de 5-15 segundos
+    }, Math.random() * 8000 + 4000); // Intervalo reduzido: 4-12 segundos
 
     setHeatingInterval(interval);
     

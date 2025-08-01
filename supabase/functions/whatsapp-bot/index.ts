@@ -14,13 +14,19 @@ serve(async (req) => {
   }
 
   try {
-    const { message, chipName } = await req.json();
+    const { message, chipName, isInitiatedByBot } = await req.json();
 
     if (!openAIApiKey) {
       return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    let systemPrompt = `Você é um assistente virtual amigável conversando via WhatsApp. Responda de forma natural e casual, como se fosse uma pessoa real. Use emojis ocasionalmente. Mantenha as respostas curtas e naturais, típicas de WhatsApp. O nome do chip que está conversando com você é ${chipName}.`;
+
+    if (isInitiatedByBot) {
+      systemPrompt += ` Você está iniciando uma conversa casual. Seja amigável e perguntador, como se fosse um amigo checando como a pessoa está.`;
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -34,12 +40,12 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: `Você é um assistente virtual amigável conversando via WhatsApp. Responda de forma natural e casual, como se fosse uma pessoa real. Use emojis ocasionalmente. Mantenha as respostas curtas e naturais, típicas de WhatsApp. O nome do chip que está conversando com você é ${chipName}.`
+            content: systemPrompt
           },
           { role: 'user', content: message }
         ],
         max_tokens: 150,
-        temperature: 0.8,
+        temperature: 0.9,
       }),
     });
 
