@@ -25,6 +25,7 @@ const ConnectNumber = () => {
     if (showQR && formData.phone_number) {
         const generateQRCode = async () => {
         try {
+          console.log('Iniciando geração do QR code...');
           // Gera um QR code no formato similar ao WhatsApp Web
           // Formato: wss://web.whatsapp.com/ws/chat/session-id
           const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -34,6 +35,7 @@ const ConnectNumber = () => {
           
           // Formato real do WhatsApp Web QR Code
           const whatsappWebData = `${sessionId},${clientId},${serverToken},${secretKey}`;
+          console.log('Dados gerados para QR:', whatsappWebData.substring(0, 20) + '...');
           
           const qrString = await QRCode.toDataURL(whatsappWebData, {
             width: 400,
@@ -45,9 +47,11 @@ const ConnectNumber = () => {
             }
           });
           
+          console.log('QR code gerado com sucesso');
           setQrCodeData(qrString);
         } catch (error) {
           console.error('Erro ao gerar QR Code:', error);
+          console.error('Stack trace:', error.stack);
         }
       };
       
