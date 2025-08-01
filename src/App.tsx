@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ConnectNumber from "./pages/ConnectNumber";
+import VerifyCredentials from "./pages/VerifyCredentials";
 import Heating from "./pages/Heating";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/connect-number" element={<ConnectNumber />} />
+          <Route path="/verify-credentials" element={<VerifyCredentials />} />
           <Route path="/heating" element={<Heating />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
