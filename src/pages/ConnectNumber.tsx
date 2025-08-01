@@ -75,11 +75,15 @@ const ConnectNumber = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    console.log('handleSubmit iniciado com dados:', formData);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Usuário obtido:', user?.id);
       
       if (!user) {
+        console.log('Usuário não autenticado, redirecionando...');
         toast({
           title: "Erro",
           description: "Usuário não autenticado.",
@@ -89,6 +93,7 @@ const ConnectNumber = () => {
         return;
       }
 
+      console.log('Tentando inserir chip na database...');
       const { error } = await supabase
         .from("chips")
         .insert({
@@ -100,19 +105,23 @@ const ConnectNumber = () => {
         });
 
       if (error) {
+        console.error('Erro ao inserir chip:', error);
         toast({
           title: "Erro",
           description: "Erro ao salvar número: " + error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Chip inserido com sucesso, definindo showQR = true');
         toast({
           title: "Número cadastrado!",
           description: "Escaneie o QR Code para conectar.",
         });
         setShowQR(true);
+        console.log('ShowQR definido como true');
       }
     } catch (error) {
+      console.error('Erro inesperado:', error);
       toast({
         title: "Erro",
         description: "Erro inesperado. Tente novamente.",
@@ -121,6 +130,7 @@ const ConnectNumber = () => {
     }
 
     setLoading(false);
+    console.log('handleSubmit finalizado');
   };
 
   const simulateConnection = () => {
