@@ -15,17 +15,54 @@ const ConnectNumber = () => {
   const [loading, setLoading] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [qrCodeData, setQrCodeData] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     phone_number: "",
   });
 
+  // Check authentication on component mount
+  useEffect(() => {
+    checkAuthentication();
+  }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+        navigate("/auth");
+        return;
+      }
+
+      if (!session?.user) {
+        console.log('Usuário não autenticado, redirecionando...');
+        toast({
+          title: "Acesso negado",
+          description: "Você precisa estar logado para acessar esta página.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Erro inesperado na verificação de auth:', error);
+      navigate("/auth");
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
   // Generate real QR code using WhatsApp Business API
   useEffect(() => {
-    if (showQR && formData.phone_number) {
+    if (showQR && formData.phone_number && isAuthenticated) {
       generateRealQRCode();
     }
-  }, [showQR, formData.phone_number]);
+  }, [showQR, formData.phone_number, isAuthenticated]);
 
   const generateRealQRCode = async () => {
     try {
@@ -81,15 +118,23 @@ const ConnectNumber = () => {
     console.log('Dados do formulário:', formData);
 
     try {
-      console.log('1. Verificando autenticação...');
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      // Verificar autenticação novamente antes de submeter
+      console.log('1. Verificando autenticação antes do submit...');
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
       
-      if (authError) {
-        console.error('Erro de autenticação:', authError);
-        throw authError;
+      if (authError || !session?.user) {
+        console.error('Erro de autenticação no submit:', authError);
+        toast({
+          title: "Sessão expirada",
+          description: "Faça login novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
       }
       
-      console.log('2. Usuário autenticado:', user?.id);
+      const user = session.user;
+      console.log('2. Usuário autenticado:', user.id);
       
       if (!user) {
         console.log('3. Usuário não encontrado, redirecionando...');
@@ -205,6 +250,27 @@ const ConnectNumber = () => {
       }
     }, 5000);
   };
+
+  // Show loading screen while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              <p className="text-sm text-muted-foreground">Verificando autenticação...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Don't render the main content if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
