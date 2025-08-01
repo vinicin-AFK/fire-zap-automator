@@ -143,6 +143,27 @@ const Heating = () => {
 
       if (response.error) {
         console.error('Erro ao chamar bot:', response.error);
+        
+        // Fallback: usar resposta padrão se o bot falhar
+        toast({
+          title: "Aviso",
+          description: "Bot temporariamente indisponível. Usando resposta padrão.",
+          variant: "destructive",
+        });
+        
+        const fallbackResponse = "Olá! Como você está? 😊";
+        
+        // Inserir resposta de fallback
+        setTimeout(async () => {
+          await supabase.from("messages").insert({
+            user_id: user?.id,
+            from_chip_id: "bot",
+            to_chip_id: chipId,
+            content: fallbackResponse,
+            status: "sent"
+          });
+        }, 1000);
+        
         return;
       }
 

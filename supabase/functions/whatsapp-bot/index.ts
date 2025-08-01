@@ -16,28 +16,49 @@ serve(async (req) => {
   }
 
   try {
-    const { message, chipName, isInitiatedByBot, phoneNumber, sendMessage } = await req.json();
+    console.log('=== WhatsApp Bot Function Called ===');
+    const body = await req.json();
+    console.log('Request body:', JSON.stringify(body, null, 2));
+    
+    const { message, chipName, isInitiatedByBot, phoneNumber, sendMessage } = body;
 
-    // Validate WhatsApp Business API access token
-    if (!whatsappAccessToken) {
-      return new Response(JSON.stringify({ error: 'WhatsApp Business API access token not configured' }), {
-        status: 500,
+    // Validate required parameters
+    if (!message) {
+      console.error('Missing required parameter: message');
+      return new Response(JSON.stringify({ error: 'Message is required' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    if (!chipName) {
+      console.error('Missing required parameter: chipName');
+      return new Response(JSON.stringify({ error: 'Chip name is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate OpenAI API key
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('✅ All validations passed');
+
     let systemPrompt = `Você é um assistente virtual amigável conversando via WhatsApp. Responda de forma natural e casual, como se fosse uma pessoa real. Use emojis ocasionalmente. Mantenha as respostas curtas e naturais, típicas de WhatsApp. O nome do chip que está conversando com você é ${chipName}.`;
 
     if (isInitiatedByBot) {
       systemPrompt += ` Você está iniciando uma conversa casual. Seja amigável e perguntador, como se fosse um amigo checando como a pessoa está.`;
     }
+
+    console.log('🤖 Calling OpenAI API...');
+    console.log('System prompt:', systemPrompt);
+    console.log('User message:', message);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -46,7 +67,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { 
             role: 'system', 
@@ -59,13 +80,34 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      return new Response(JSON.stringify({ 
+        error: `OpenAI API error: ${response.status} - ${errorText}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const data = await response.json();
+    console.log('OpenAI response data:', JSON.stringify(data, null, 2));
     
     if (!data.choices || !data.choices[0]) {
-      throw new Error('Invalid response from OpenAI');
+      console.error('Invalid OpenAI response structure:', data);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid response from OpenAI - no choices found' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     
     const botResponse = data.choices[0].message.content;
+    console.log('✅ Bot response generated:', botResponse);
 
     // Se sendMessage for true, enviar a mensagem via WhatsApp Business API oficial
     if (sendMessage && phoneNumber && phoneNumberId) {
@@ -123,9 +165,19 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in whatsapp-bot function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    console.error('❌ Error in whatsapp-bot function:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Fallback response para não quebrar o aquecimento
+    const fallbackResponse = "Olá! Como você está? 😊";
+    
+    return new Response(JSON.stringify({ 
+      response: fallbackResponse,
+      timestamp: new Date().toISOString(),
+      sent_via_whatsapp: false,
+      error: "Bot temporarily unavailable, using fallback response"
+    }), {
+      status: 200, // Status 200 para não quebrar o fluxo
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
