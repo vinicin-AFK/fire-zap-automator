@@ -56,30 +56,33 @@ export type Database = {
       messages: {
         Row: {
           content: string
-          from_chip_id: string
+          from_chip_id: string | null
           id: string
           sent_at: string
           status: string
-          to_chip_id: string
+          to_chip_id: string | null
           user_id: string
+          whatsapp_message_id: string | null
         }
         Insert: {
           content: string
-          from_chip_id: string
+          from_chip_id?: string | null
           id?: string
           sent_at?: string
           status?: string
-          to_chip_id: string
+          to_chip_id?: string | null
           user_id: string
+          whatsapp_message_id?: string | null
         }
         Update: {
           content?: string
-          from_chip_id?: string
+          from_chip_id?: string | null
           id?: string
           sent_at?: string
           status?: string
-          to_chip_id?: string
+          to_chip_id?: string | null
           user_id?: string
+          whatsapp_message_id?: string | null
         }
         Relationships: [
           {

@@ -500,9 +500,32 @@ const Heating = () => {
 
   useEffect(() => {
     loadMessages();
-    const interval = setInterval(loadMessages, 3000); // Atualizar mensagens a cada 3 segundos
-    return () => clearInterval(interval);
-  }, []);
+    
+    // Configurar realtime para mensagens
+    const channel = supabase
+      .channel('messages-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'messages',
+          filter: `user_id=eq.${user?.id}`
+        },
+        (payload) => {
+          console.log('Realtime message update:', payload);
+          loadMessages(); // Recarregar mensagens quando houver mudanças
+        }
+      )
+      .subscribe();
+
+    const interval = setInterval(loadMessages, 10000); // Backup: atualizar mensagens a cada 10 segundos
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background">
