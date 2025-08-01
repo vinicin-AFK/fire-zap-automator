@@ -259,7 +259,7 @@ const ConnectNumber = () => {
                   </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Cadastrando..." : "Cadastrar e Gerar QR Code"}
+                  {loading ? "Cadastrando..." : "Registrar na API Business"}
                 </Button>
               </form>
             </CardContent>
@@ -272,45 +272,28 @@ const ConnectNumber = () => {
                 WhatsApp Business API
               </CardTitle>
               <CardDescription>
-                Seu número será conectado via API oficial do WhatsApp Business
+                Conectando via API oficial do WhatsApp Business
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              {qrCodeData ? (
-                <div className="bg-white border-2 border-gray-200 rounded-lg p-8 mb-6">
-                  <div className="flex flex-col items-center">
-                    <QrCode className="h-8 w-8 text-primary mb-4" />
-                    <h3 className="text-lg font-semibold mb-4">
-                      Escaneie o QR Code
-                    </h3>
-                    <div className="bg-white p-4 rounded-lg border">
-                      <img 
-                        src={qrCodeData} 
-                        alt="QR Code para conectar WhatsApp"
-                        className="w-64 h-64"
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4">
-                      Abra o WhatsApp Web no seu celular e escaneie este código
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Número: {formData.phone_number}
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-8 mb-6">
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <Smartphone className="h-10 w-10 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-green-800 mb-2">
+                    ✅ Número Registrado na API
+                  </h3>
+                  <p className="text-sm text-green-700 mb-4">
+                    <strong>Número:</strong> {formData.phone_number}
+                  </p>
+                  <div className="bg-green-100 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-green-800 font-medium">
+                      🚀 Pronto para enviar mensagens via API Business
                     </p>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-muted border-2 border-border rounded-lg p-8 mb-6">
-                  <div className="flex flex-col items-center">
-                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      Gerando QR Code...
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Aguarde alguns segundos
-                    </p>
-                  </div>
-                </div>
-              )}
+              </div>
               
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
