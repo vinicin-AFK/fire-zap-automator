@@ -76,14 +76,22 @@ const ConnectNumber = () => {
     e.preventDefault();
     setLoading(true);
     
-    console.log('handleSubmit iniciado com dados:', formData);
+    console.log('=== INÍCIO handleSubmit ===');
+    console.log('Dados do formulário:', formData);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Usuário obtido:', user?.id);
+      console.log('1. Verificando autenticação...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Erro de autenticação:', authError);
+        throw authError;
+      }
+      
+      console.log('2. Usuário autenticado:', user?.id);
       
       if (!user) {
-        console.log('Usuário não autenticado, redirecionando...');
+        console.log('3. Usuário não encontrado, redirecionando...');
         toast({
           title: "Erro",
           description: "Usuário não autenticado.",
@@ -93,8 +101,17 @@ const ConnectNumber = () => {
         return;
       }
 
-      console.log('Tentando inserir chip na database...');
-      const { error } = await supabase
+      console.log('4. Tentando inserir na tabela chips...');
+      console.log('Dados que serão inseridos:', {
+        user_id: user.id,
+        name: formData.name,
+        phone_number: formData.phone_number,
+        status: "connecting",
+        connected: false,
+        messages_count: 0
+      });
+
+      const { data, error } = await supabase
         .from("chips")
         .insert({
           user_id: user.id,
@@ -102,35 +119,50 @@ const ConnectNumber = () => {
           phone_number: formData.phone_number,
           status: "connecting",
           connected: false,
-        });
+          messages_count: 0
+        })
+        .select();
+
+      console.log('5. Resultado da inserção:');
+      console.log('Data:', data);
+      console.log('Error:', error);
 
       if (error) {
-        console.error('Erro ao inserir chip:', error);
+        console.error('6. ERRO ao inserir chip:', error);
+        console.error('Código do erro:', error.code);
+        console.error('Mensagem do erro:', error.message);
+        console.error('Detalhes do erro:', error.details);
+        
         toast({
           title: "Erro",
-          description: "Erro ao salvar número: " + error.message,
+          description: `Erro ao salvar número: ${error.message}`,
           variant: "destructive",
         });
       } else {
-        console.log('Chip inserido com sucesso, definindo showQR = true');
+        console.log('7. ✅ Chip inserido com sucesso!');
+        console.log('8. Definindo showQR = true...');
+        
         toast({
           title: "Número cadastrado!",
-          description: "Escaneie o QR Code para conectar.",
+          description: "Gerando QR Code para conectar.",
         });
+        
         setShowQR(true);
-        console.log('ShowQR definido como true');
+        console.log('9. ✅ ShowQR definido como true');
       }
     } catch (error) {
-      console.error('Erro inesperado:', error);
+      console.error('10. ERRO INESPERADO:', error);
+      console.error('Stack trace:', error.stack);
+      
       toast({
         title: "Erro",
-        description: "Erro inesperado. Tente novamente.",
+        description: `Erro inesperado: ${error.message}`,
         variant: "destructive",
       });
     }
 
     setLoading(false);
-    console.log('handleSubmit finalizado');
+    console.log('=== FIM handleSubmit ===');
   };
 
   const simulateConnection = () => {
