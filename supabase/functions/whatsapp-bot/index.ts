@@ -70,8 +70,11 @@ serve(async (req) => {
     // Se sendMessage for true, enviar a mensagem via WhatsApp Business API oficial
     if (sendMessage && phoneNumber && phoneNumberId) {
       try {
-        // Endpoint oficial da API do WhatsApp Business
-        const whatsappApiUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+        // Endpoint oficial da API do WhatsApp Business v19.0
+        const whatsappApiUrl = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+        
+        console.log(`Enviando mensagem via WhatsApp Business API para ${phoneNumber}`);
+        console.log('URL:', whatsappApiUrl);
         
         const whatsappResponse = await fetch(whatsappApiUrl, {
           method: 'POST',
@@ -90,17 +93,21 @@ serve(async (req) => {
         });
 
         const whatsappData = await whatsappResponse.json();
+        console.log('Resposta da API WhatsApp:', whatsappData);
 
         if (!whatsappResponse.ok) {
           console.error('WhatsApp Business API error:', whatsappData);
           throw new Error(`WhatsApp API error: ${whatsappData.error?.message || 'Unknown error'}`);
         }
 
-        console.log(`Message sent via WhatsApp Business API to ${phoneNumber}:`, whatsappData);
+        console.log(`✅ Mensagem enviada com sucesso via WhatsApp Business API para ${phoneNumber}`);
+        console.log('Message ID:', whatsappData.messages?.[0]?.id);
+        
       } catch (whatsappError) {
-        console.error('Error sending WhatsApp message:', whatsappError);
+        console.error('❌ Erro ao enviar mensagem WhatsApp:', whatsappError);
         return new Response(JSON.stringify({ 
-          error: `Failed to send WhatsApp message: ${whatsappError.message}` 
+          error: `Failed to send WhatsApp message: ${whatsappError.message}`,
+          response: botResponse 
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
