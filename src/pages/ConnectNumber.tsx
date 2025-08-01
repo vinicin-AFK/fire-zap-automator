@@ -33,8 +33,9 @@ const ConnectNumber = () => {
           };
           
           const qrString = await QRCode.toDataURL(JSON.stringify(whatsappData), {
-            width: 256,
-            margin: 2,
+            width: 400,
+            margin: 4,
+            errorCorrectionLevel: 'H',
             color: {
               dark: '#000000',
               light: '#FFFFFF'
@@ -202,14 +203,24 @@ const ConnectNumber = () => {
                   <img 
                     src={qrCodeData} 
                     alt="QR Code para conectar WhatsApp" 
-                    className="w-64 h-64 mx-auto rounded-lg"
+                    className="w-80 h-80 mx-auto rounded-lg shadow-lg"
+                    style={{ imageRendering: 'pixelated' }}
                   />
                 ) : (
-                  <div className="w-64 h-64 mx-auto bg-muted flex items-center justify-center rounded-lg">
+                  <div className="w-80 h-80 mx-auto bg-muted flex items-center justify-center rounded-lg">
                     <QrCode className="h-32 w-32 text-muted-foreground animate-pulse" />
                   </div>
                 )}
               </div>
+              
+              <Button 
+                onClick={() => setQrCodeData("")}
+                variant="outline"
+                size="sm"
+                className="mb-4"
+              >
+                Gerar Novo QR Code
+              </Button>
               
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground space-y-2">
