@@ -20,38 +20,51 @@ const ConnectNumber = () => {
     phone_number: "",
   });
 
-  // Gerar QR Code real quando o número for cadastrado
+  // Gerar QR Code quando o número for cadastrado
   useEffect(() => {
+    console.log('useEffect triggered - showQR:', showQR, 'phone:', formData.phone_number);
+    
     if (showQR && formData.phone_number) {
-        const generateQRCode = async () => {
+      const generateQRCode = async () => {
         try {
           console.log('Iniciando geração do QR code...');
-          // Gera um QR code no formato similar ao WhatsApp Web
-          // Formato: wss://web.whatsapp.com/ws/chat/session-id
-          const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-          const clientId = Math.random().toString(36).substring(2, 15);
-          const serverToken = Math.random().toString(36).substring(2, 25);
-          const secretKey = Math.random().toString(36).substring(2, 25);
           
-          // Formato real do WhatsApp Web QR Code
-          const whatsappWebData = `${sessionId},${clientId},${serverToken},${secretKey}`;
-          console.log('Dados gerados para QR:', whatsappWebData.substring(0, 20) + '...');
+          // Dados simples para teste
+          const testData = `Fire Zap Connection: ${formData.phone_number} - ${Date.now()}`;
+          console.log('Gerando QR para:', testData);
           
-          const qrString = await QRCode.toDataURL(whatsappWebData, {
-            width: 400,
-            margin: 4,
-            errorCorrectionLevel: 'H',
+          const qrOptions = {
+            width: 300,
+            margin: 2,
+            errorCorrectionLevel: 'M' as const,
             color: {
               dark: '#000000',
               light: '#FFFFFF'
             }
-          });
+          };
           
-          console.log('QR code gerado com sucesso');
+          console.log('Opções do QR:', qrOptions);
+          
+          const qrString = await QRCode.toDataURL(testData, qrOptions);
+          console.log('QR code gerado - tamanho:', qrString.length);
+          
           setQrCodeData(qrString);
+          console.log('QR code definido no state');
+          
         } catch (error) {
-          console.error('Erro ao gerar QR Code:', error);
-          console.error('Stack trace:', error.stack);
+          console.error('ERRO COMPLETO ao gerar QR Code:', error);
+          console.error('Erro message:', error?.message);
+          console.error('Erro stack:', error?.stack);
+          
+          // Fallback - gerar QR mais simples
+          try {
+            console.log('Tentando fallback...');
+            const simpleQR = await QRCode.toDataURL(formData.phone_number);
+            setQrCodeData(simpleQR);
+            console.log('Fallback funcionou');
+          } catch (fallbackError) {
+            console.error('Fallback também falhou:', fallbackError);
+          }
         }
       };
       
