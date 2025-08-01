@@ -125,7 +125,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Flame className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl font-bold bg-gradient-fire bg-clip-text text-transparent">
+            <CardTitle className="text-2xl font-bold text-primary">
               Fire Zap
             </CardTitle>
           </div>
