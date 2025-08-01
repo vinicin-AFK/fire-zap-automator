@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const whatsappApiKey = Deno.env.get('WHATSAPP_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,23 @@ serve(async (req) => {
   }
 
   try {
-    const { message, chipName, isInitiatedByBot } = await req.json();
+    const { message, chipName, isInitiatedByBot, phoneNumber, sendMessage } = await req.json();
+
+    // Validate WhatsApp API key format
+    if (!whatsappApiKey) {
+      return new Response(JSON.stringify({ error: 'WhatsApp API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const keyPattern = /^HX[0-9a-fA-F]{32}$/;
+    if (!keyPattern.test(whatsappApiKey)) {
+      return new Response(JSON.stringify({ error: 'Invalid WhatsApp API key format' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!openAIApiKey) {
       return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
@@ -57,9 +74,36 @@ serve(async (req) => {
     
     const botResponse = data.choices[0].message.content;
 
+    // Se sendMessage for true, enviar a mensagem via WhatsApp API
+    if (sendMessage && phoneNumber) {
+      try {
+        const whatsappResponse = await fetch('https://api.whatsapp.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${whatsappApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: phoneNumber,
+            text: { body: botResponse }
+          }),
+        });
+
+        if (!whatsappResponse.ok) {
+          console.error('WhatsApp API error:', await whatsappResponse.text());
+        }
+
+        console.log(`Message sent via WhatsApp to ${phoneNumber}: ${botResponse}`);
+      } catch (whatsappError) {
+        console.error('Error sending WhatsApp message:', whatsappError);
+      }
+    }
+
     return new Response(JSON.stringify({ 
       response: botResponse,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      sent_via_whatsapp: sendMessage && phoneNumber ? true : false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
