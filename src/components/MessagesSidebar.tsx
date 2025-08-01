@@ -9,7 +9,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
 
 interface Message {
   id: string;
@@ -130,8 +129,7 @@ export function MessagesSidebar({ messages, chips }: MessagesSidebarProps) {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {formatDistanceToNow(new Date(message.sent_at), {
-                        addSuffix: true,
-                        locale: ptBR
+                        addSuffix: true
                       })}
                     </div>
                   </div>
