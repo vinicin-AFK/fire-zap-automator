@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +7,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Flame, QrCode, Smartphone } from "lucide-react";
+import QRCode from "qrcode";
 
 const ConnectNumber = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone_number: "",
   });
+
+  // Gerar QR Code real quando o número for cadastrado
+  useEffect(() => {
+    if (showQR && formData.phone_number) {
+      const generateQRCode = async () => {
+        try {
+          // Simula dados do WhatsApp Web para conexão
+          const whatsappData = {
+            phone: formData.phone_number,
+            timestamp: Date.now(),
+            session: Math.random().toString(36).substring(7)
+          };
+          
+          const qrString = await QRCode.toDataURL(JSON.stringify(whatsappData), {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+          
+          setQrCodeData(qrString);
+        } catch (error) {
+          console.error('Erro ao gerar QR Code:', error);
+        }
+      };
+      
+      generateQRCode();
+    }
+  }, [showQR, formData.phone_number]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,11 +197,18 @@ const ConnectNumber = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <div className="bg-background border-2 border-dashed border-border rounded-lg p-8 mb-6">
-                {/* QR Code simulado */}
-                <div className="w-64 h-64 mx-auto bg-foreground flex items-center justify-center rounded-lg">
-                  <QrCode className="h-32 w-32 text-background" />
-                </div>
+              <div className="bg-white border-2 border-dashed border-border rounded-lg p-8 mb-6">
+                {qrCodeData ? (
+                  <img 
+                    src={qrCodeData} 
+                    alt="QR Code para conectar WhatsApp" 
+                    className="w-64 h-64 mx-auto rounded-lg"
+                  />
+                ) : (
+                  <div className="w-64 h-64 mx-auto bg-muted flex items-center justify-center rounded-lg">
+                    <QrCode className="h-32 w-32 text-muted-foreground animate-pulse" />
+                  </div>
+                )}
               </div>
               
               <div className="space-y-4">
