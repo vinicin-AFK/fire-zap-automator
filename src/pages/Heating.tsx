@@ -121,6 +121,8 @@ const Heating = () => {
     const chip = chips.find(c => c.id === chipId);
     if (!chip) return;
 
+    let botResponse = "Olá! 👋"; // Valor padrão
+
     try {
       // Se a mensagem foi iniciada pelo chip, enviar primeiro a mensagem do chip
       if (isInitiatedByChip) {
@@ -144,30 +146,35 @@ const Heating = () => {
       if (response.error) {
         console.error('Erro ao chamar bot:', response.error);
         
-        // Fallback: usar resposta padrão se o bot falhar
-        toast({
-          title: "Aviso",
-          description: "Bot temporariamente indisponível. Usando resposta padrão.",
-          variant: "destructive",
-        });
+        // Usar respostas de fallback variadas
+        const fallbackMessages = [
+          "Oi! Como você está? 😊",
+          "Olá! Tudo bem por aí?",
+          "E aí! Como foi o dia?",
+          "Oi! Alguma novidade? 😄",
+          "Olá! Como estão as coisas?",
+          "E aí! Tudo tranquilo?",
+          "Oi! Como foi o trabalho hoje?",
+          "Olá! Que bom te ver online!",
+          "E aí! Tudo bem com você?",
+          "Oi! Como está se sentindo?",
+          "Olá! Tudo certo?",
+          "E aí! Como você está hoje?",
+          "Oi! Que bom te ver! 😊",
+          "Olá! Como está se sentindo hoje?",
+          "E aí! Tudo bem?",
+          "Oi! Alguma novidade hoje?",
+          "Olá! Tudo tranquilo por aí?",
+          "E aí! Como foi tudo?",
+          "Oi! Que bom falar contigo! 😄",
+          "Olá! Como estão as coisas hoje?"
+        ];
         
-        const fallbackResponse = "Olá! Como você está? 😊";
-        
-        // Inserir resposta de fallback
-        setTimeout(async () => {
-          await supabase.from("messages").insert({
-            user_id: user?.id,
-            from_chip_id: "bot",
-            to_chip_id: chipId,
-            content: fallbackResponse,
-            status: "sent"
-          });
-        }, 1000);
-        
-        return;
+        botResponse = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
+        console.log("✅ Usando fallback:", botResponse);
+      } else {
+        botResponse = response.data?.response || "Olá! 👋";
       }
-
-      const botResponse = response.data?.response || "Olá! 👋";
       
       // Simular digitação e resposta do bot
       setTimeout(async () => {
