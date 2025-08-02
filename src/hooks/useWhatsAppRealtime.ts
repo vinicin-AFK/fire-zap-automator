@@ -50,10 +50,15 @@ export const useWhatsAppRealtime = () => {
       wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 Mensagem WebSocket WhatsApp:', data);
+          console.log('📨 Mensagem WebSocket WhatsApp recebida:', data);
 
           switch (data.type) {
+            case 'status':
+              console.log('ℹ️ Status:', data.message);
+              break;
+
             case 'qr':
+              console.log('📱 QR Code recebido!');
               setState(prev => ({
                 ...prev,
                 qrCode: data.qr,
@@ -146,28 +151,10 @@ export const useWhatsAppRealtime = () => {
     console.log('🔄 Iniciando conexão WhatsApp para:', phoneNumber);
     
     try {
-      // Primeiro conecta o WebSocket
+      // Apenas conecta o WebSocket - não precisa de requisição HTTP separada
       connectWebSocket();
-
-      // Depois invoca a função Edge para iniciar a sessão
-      const { data, error } = await supabase.functions.invoke('whatsapp-realtime', {
-        body: { 
-          action: 'connect',
-          phoneNumber: phoneNumber 
-        }
-      });
-
-      if (error) {
-        console.error('❌ Erro ao invocar função WhatsApp:', error);
-        setState(prev => ({
-          ...prev,
-          connectionStatus: 'error',
-          error: error.message || 'Erro ao conectar'
-        }));
-        return;
-      }
-
-      console.log('✅ Função WhatsApp invocada com sucesso:', data);
+      
+      console.log('✅ WebSocket iniciado com sucesso');
       
     } catch (error) {
       console.error('❌ Erro ao conectar WhatsApp:', error);
