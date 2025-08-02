@@ -46,12 +46,21 @@ const Auth = () => {
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
 
+    if (password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: name,
           },
@@ -59,16 +68,25 @@ const Auth = () => {
       });
 
       if (error) {
-        toast({
-          title: "Erro ao criar conta",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Usuário já existe",
+            description: "Este email já está cadastrado. Tente fazer login.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro ao criar conta",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else if (data.user) {
         toast({
           title: "Conta criada!",
-          description: "Verifique seu email para confirmar a conta.",
+          description: "Sua conta foi criada com sucesso. Você já está logado.",
         });
+        navigate("/dashboard");
       }
     } catch (error) {
       toast({
@@ -90,18 +108,26 @@ const Auth = () => {
     const password = formData.get("password") as string;
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        toast({
-          title: "Erro ao fazer login",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Credenciais inválidas",
+            description: "Email ou senha incorretos.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro ao fazer login",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else if (data.user) {
         toast({
           title: "Bem-vindo!",
           description: "Login realizado com sucesso.",
@@ -196,7 +222,8 @@ const Auth = () => {
                     id="signup-password"
                     name="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Mínimo 6 caracteres"
+                    minLength={6}
                     required
                   />
                 </div>
