@@ -102,9 +102,26 @@ serve(async (req) => {
       setTimeout(() => {
         socket.emit("message", {
           type: "status",
-          message: "Socket.IO pronto para receber comandos",
+          message: "WhatsApp Socket conectado, gerando QR code...",
           timestamp: new Date().toISOString()
         });
+
+        // Simular geração de QR code após 2 segundos
+        setTimeout(() => {
+          const qrCode = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(`whatsapp:connect:${Date.now()}`);
+          console.log("📱 Enviando QR Code");
+          socket.emit("qr", qrCode);
+        }, 2000);
+
+        // Simular autenticação após 15 segundos
+        setTimeout(() => {
+          console.log("🔐 WhatsApp autenticado");
+          socket.emit("ready", {
+            sessionId: `session_${Date.now()}`,
+            status: "authenticated",
+            message: "WhatsApp conectado com sucesso!"
+          });
+        }, 15000);
       }, 1000);
     });
 
