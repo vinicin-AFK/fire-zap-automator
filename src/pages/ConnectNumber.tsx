@@ -7,20 +7,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Flame, QrCode, Smartphone } from "lucide-react";
-import QRCode from "qrcode";
+import { useWhatsAppRealtime } from "@/hooks/useWhatsAppRealtime";
 
 const ConnectNumber = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showQR, setShowQR] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     phone_number: "",
   });
+
+  const { 
+    qrCode, 
+    connectionStatus, 
+    isConnected,
+    connectToWhatsApp 
+  } = useWhatsAppRealtime();
 
   // Check authentication on component mount
   useEffect(() => {
@@ -57,58 +63,23 @@ const ConnectNumber = () => {
     }
   };
 
-  // Generate real QR code using WhatsApp Business API
+  // Start WhatsApp connection when QR should be shown
   useEffect(() => {
     if (showQR && formData.phone_number && isAuthenticated) {
-      generateRealQRCode();
+      connectToWhatsApp(formData.phone_number);
     }
-  }, [showQR, formData.phone_number, isAuthenticated]);
+  }, [showQR, formData.phone_number, isAuthenticated, connectToWhatsApp]);
 
-  const generateRealQRCode = async () => {
-    try {
-      console.log('Gerando QR code real para:', formData.phone_number);
-      
-      const { data, error } = await supabase.functions.invoke('whatsapp-qr', {
-        body: { phone_number: formData.phone_number }
-      });
-
-      if (error) {
-        console.error('Erro ao chamar função:', error);
-        throw error;
-      }
-
-      if (data?.success && data?.qr_code_url) {
-        console.log('QR code gerado com sucesso:', data.qr_code_url);
-        setQrCodeData(data.qr_code_url);
-      } else {
-        throw new Error(data?.error || 'Falha ao gerar QR code');
-      }
-    } catch (error) {
-      console.error('Erro ao gerar QR code real:', error);
+  // Handle connection status changes
+  useEffect(() => {
+    if (isConnected) {
       toast({
-        title: "Aviso",
-        description: "Usando API Business - QR code não necessário para produção.",
-        variant: "default",
+        title: "Conectado!",
+        description: "WhatsApp conectado com sucesso.",
       });
-      
-      // Fallback para QR code de demonstração
-      try {
-        const fallbackData = `Fire Zap - WhatsApp Business API\nNúmero: ${formData.phone_number}\nConexão: ${Date.now()}`;
-        const qrString = await QRCode.toDataURL(fallbackData, {
-          width: 300,
-          margin: 2,
-          errorCorrectionLevel: 'M' as const,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-        setQrCodeData(qrString);
-      } catch (fallbackError) {
-        console.error('Fallback também falhou:', fallbackError);
-      }
+      navigate("/dashboard");
     }
-  };
+  }, [isConnected, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,7 +314,7 @@ const ConnectNumber = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              {qrCodeData ? (
+              {qrCode ? (
                 <div className="bg-white border-2 border-gray-200 rounded-lg p-8 mb-6">
                   <div className="flex flex-col items-center">
                     <QrCode className="h-8 w-8 text-primary mb-4" />
@@ -352,7 +323,7 @@ const ConnectNumber = () => {
                     </h3>
                     <div className="bg-white p-4 rounded-lg border">
                       <img 
-                        src={qrCodeData} 
+                        src={qrCode} 
                         alt="QR Code para conectar WhatsApp"
                         className="w-64 h-64"
                       />
@@ -361,7 +332,7 @@ const ConnectNumber = () => {
                       Abra o WhatsApp Web no seu celular e escaneie este código
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Número: {formData.phone_number}
+                      Número: {formData.phone_number} | Status: {connectionStatus}
                     </p>
                   </div>
                 </div>
@@ -369,11 +340,11 @@ const ConnectNumber = () => {
                 <div className="bg-muted border-2 border-border rounded-lg p-8 mb-6">
                   <div className="flex flex-col items-center">
                     <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      Gerando QR Code...
+                    <h3 className="text-lg font-semibold mb-4">
+                      {connectionStatus === 'connecting' ? 'Conectando ao WhatsApp...' : 'Gerando QR Code...'}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Aguarde alguns segundos
+                      Status: {connectionStatus}
                     </p>
                   </div>
                 </div>
