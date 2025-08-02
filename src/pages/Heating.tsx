@@ -122,7 +122,31 @@ const Heating = () => {
     const chip = chips.find(c => c.id === chipId);
     if (!chip) return;
 
-    let botResponse = "Olá! 👋";
+    // Mensagens inteligentes de fallback que garantem fluxo contínuo
+    const intelligentBotResponses = [
+      "Oi! Como você está? 😊",
+      "Olá! Tudo bem por aí?",
+      "E aí! Como foi o dia?",
+      "Oi! Alguma novidade? 😄",
+      "Olá! Como estão as coisas?",
+      "E aí! Tudo tranquilo?",
+      "Oi! Como foi o trabalho hoje?",
+      "Olá! Que bom te ver online!",
+      "E aí! Tudo bem com você?",
+      "Oi! Como está se sentindo?",
+      "Hey! Qual é a boa de hoje? 🚀",
+      "Olá! Pronto para um novo dia? ☀️",
+      "E aí! Como estão os negócios? 💼",
+      "Oi! Tudo correndo bem? 👍",
+      "Olá! Como está o movimento? 📈",
+      "E aí! Preparado para vender muito? 💪",
+      "Oi! Qual é o objetivo de hoje? 🎯",
+      "Olá! Bora trabalhar! 🔥",
+      "E aí! Animado para o dia? 😎",
+      "Oi! Vamos fazer acontecer! ⚡"
+    ];
+
+    let botResponse = intelligentBotResponses[Math.floor(Math.random() * intelligentBotResponses.length)];
 
     try {
       if (isInitiatedByChip) {
@@ -135,35 +159,25 @@ const Heating = () => {
         });
       }
 
-      const response = await supabase.functions.invoke('whatsapp-bot', {
-        body: { 
-          message: message,
-          chipName: chip.name,
-          isInitiatedByBot: !isInitiatedByChip
-        }
-      });
+      // Tenta usar a API do bot, mas sempre continua com fallback
+      try {
+        const response = await supabase.functions.invoke('whatsapp-bot', {
+          body: { 
+            message: message,
+            chipName: chip.name,
+            isInitiatedByBot: !isInitiatedByChip
+          }
+        });
 
-      if (response.error) {
-        console.error('Erro ao chamar bot:', response.error);
-        
-        const fallbackMessages = [
-          "Oi! Como você está? 😊",
-          "Olá! Tudo bem por aí?",
-          "E aí! Como foi o dia?",
-          "Oi! Alguma novidade? 😄",
-          "Olá! Como estão as coisas?",
-          "E aí! Tudo tranquilo?",
-          "Oi! Como foi o trabalho hoje?",
-          "Olá! Que bom te ver online!",
-          "E aí! Tudo bem com você?",
-          "Oi! Como está se sentindo?"
-        ];
-        
-        botResponse = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
-      } else {
-        botResponse = response.data?.response || "Olá! 👋";
+        if (response.data?.response && !response.error) {
+          botResponse = response.data.response;
+        }
+      } catch (apiError) {
+        console.log('API bot indisponível, usando fallback inteligente');
+        // Mantém o botResponse já definido
       }
       
+      // Sempre envia resposta para manter fluxo contínuo
       setTimeout(async () => {
         if (!isInitiatedByChip) {
           await supabase.from("messages").insert({
@@ -174,16 +188,27 @@ const Heating = () => {
             status: "sent"
           });
 
+          // Chip sempre responde para manter conversação ativa
           setTimeout(async () => {
-            const chipResponses = [
+            const intelligentChipResponses = [
               "Oi! Tudo bem sim! 😊",
               "Olá! Como você está?",
               "Oi bot! Tudo ótimo!",
               "Hey! Obrigado por perguntar! 👍",
-              "Oi! Tudo certo por aqui!"
+              "Oi! Tudo certo por aqui!",
+              "Massa! Trabalhando firme! 💪",
+              "Beleza! E você, como está? 😎",
+              "Tranquilo! Bora conversar! 🔥",
+              "Show! Tudo correndo bem! ⚡",
+              "Perfeito! Animado para hoje! 🚀",
+              "Excelente! Pronto para vender! 💼",
+              "Ótimo! Vamos que vamos! 🎯",
+              "Maravilha! Dia produtivo! 📈",
+              "Fantástico! Cheio de energia! ☀️",
+              "Incrível! Focado nos resultados! 🔥"
             ];
             
-            const chipResponse = chipResponses[Math.floor(Math.random() * chipResponses.length)];
+            const chipResponse = intelligentChipResponses[Math.floor(Math.random() * intelligentChipResponses.length)];
             
             await supabase.from("messages").insert({
               user_id: user?.id,
@@ -203,7 +228,7 @@ const Heating = () => {
 
             loadMessages();
             loadChips();
-          }, Math.random() * 3000 + 1500);
+          }, Math.random() * 2000 + 1000);
 
         } else {
           await supabase.from("messages").insert({
@@ -225,7 +250,7 @@ const Heating = () => {
           loadMessages();
           loadChips();
         }
-      }, Math.random() * 3000 + 1000);
+      }, Math.random() * 2000 + 500);
 
     } catch (error) {
       console.error("Erro ao enviar mensagem para bot:", error);
@@ -388,7 +413,7 @@ const Heating = () => {
     
     const interval = setInterval(() => {
       sendRandomMessage();
-    }, Math.random() * 4000 + 2000);
+    }, Math.random() * 3000 + 1500); // Intervalo mais rápido para fluxo contínuo
 
     setHeatingInterval(interval);
     
