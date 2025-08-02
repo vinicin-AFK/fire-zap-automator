@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { io, Socket } from 'socket.io-client';
 
 // Hook para gerenciar sessões híbridas do Fire Zap
 export const useHybridAPI = () => {
@@ -78,44 +79,47 @@ export const useHybridAPI = () => {
     }
   };
 
-  // WebSocket para atualizações real-time
+  // Socket.IO para atualizações real-time
   const connectWebSocket = () => {
     const projectId = 'fuohmclakezkvgaiarao';
-    const wsUrl = `wss://${projectId}.functions.supabase.co/functions/v1/hybrid-websocket`;
+    const socketUrl = `https://${projectId}.functions.supabase.co/functions/v1/hybrid-socketio`;
     
-    const ws = new WebSocket(wsUrl);
+    const socket: Socket = io(socketUrl, {
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000
+    });
     
-    ws.onopen = () => {
-      console.log('🔗 WebSocket conectado');
-      ws.send(JSON.stringify({
+    socket.on('connect', () => {
+      console.log('🔗 Socket.IO conectado');
+      socket.emit('message', {
         type: 'ping',
         timestamp: new Date().toISOString()
-      }));
-    };
+      });
+    });
     
-    ws.onmessage = (event) => {
+    socket.on('message', (data: any) => {
       try {
-        const data = JSON.parse(event.data);
-        console.log('📨 Mensagem WebSocket recebida:', data);
+        console.log('📨 Mensagem Socket.IO recebida:', data);
         
         // Emitir eventos customizados para componentes ouvirem
         window.dispatchEvent(new CustomEvent('hybrid-update', { detail: data }));
       } catch (error) {
-        console.error('Erro ao processar mensagem WebSocket:', error);
+        console.error('Erro ao processar mensagem Socket.IO:', error);
       }
-    };
+    });
     
-    ws.onclose = () => {
-      console.log('❌ WebSocket desconectado');
-      // Reconectar após 3 segundos
-      setTimeout(() => connectWebSocket(), 3000);
-    };
+    socket.on('disconnect', () => {
+      console.log('❌ Socket.IO desconectado');
+    });
     
-    ws.onerror = (error) => {
-      console.error('Erro no WebSocket:', error);
-    };
+    socket.on('connect_error', (error) => {
+      console.error('Erro no Socket.IO:', error);
+    });
     
-    return ws;
+    return socket;
   };
 
   return {
