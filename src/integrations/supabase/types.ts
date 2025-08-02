@@ -56,30 +56,39 @@ export type Database = {
       messages: {
         Row: {
           content: string
+          from_bot: boolean | null
           from_chip_id: string | null
           id: string
+          message_type: string | null
           sent_at: string
           status: string
+          to_bot: boolean | null
           to_chip_id: string | null
           user_id: string
           whatsapp_message_id: string | null
         }
         Insert: {
           content: string
+          from_bot?: boolean | null
           from_chip_id?: string | null
           id?: string
+          message_type?: string | null
           sent_at?: string
           status?: string
+          to_bot?: boolean | null
           to_chip_id?: string | null
           user_id: string
           whatsapp_message_id?: string | null
         }
         Update: {
           content?: string
+          from_bot?: boolean | null
           from_chip_id?: string | null
           id?: string
+          message_type?: string | null
           sent_at?: string
           status?: string
+          to_bot?: boolean | null
           to_chip_id?: string | null
           user_id?: string
           whatsapp_message_id?: string | null

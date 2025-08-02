@@ -25,10 +25,13 @@ interface Chip {
 interface Message {
   id: string;
   content: string;
-  from_chip_id: string;
-  to_chip_id: string;
+  from_chip_id: string | null;
+  to_chip_id: string | null;
   sent_at: string;
   status: string;
+  from_bot?: boolean;
+  to_bot?: boolean;
+  message_type?: string;
 }
 
 const Heating = () => {
@@ -153,9 +156,12 @@ const Heating = () => {
         await supabase.from("messages").insert({
           user_id: user?.id,
           from_chip_id: chipId,
-          to_chip_id: "bot",
+          to_chip_id: null,
           content: message,
-          status: "sent"
+          status: "sent",
+          from_bot: false,
+          to_bot: true,
+          message_type: "chip"
         });
       }
 
@@ -185,10 +191,13 @@ const Heating = () => {
           // Bot iniciou - salva resposta do bot
           await supabase.from("messages").insert({
             user_id: user?.id,
-            from_chip_id: "bot",
+            from_chip_id: null,
             to_chip_id: chipId,
             content: botResponse,
-            status: "sent"
+            status: "sent",
+            from_bot: true,
+            to_bot: false,
+            message_type: "bot"
           });
 
           console.log(`💬 Bot enviou: ${botResponse} para ${chip.name}`);
@@ -218,9 +227,12 @@ const Heating = () => {
             await supabase.from("messages").insert({
               user_id: user?.id,
               from_chip_id: chipId,
-              to_chip_id: "bot",
+              to_chip_id: null,
               content: chipResponse,
-              status: "sent"
+              status: "sent",
+              from_bot: false,
+              to_bot: true,
+              message_type: "chip"
             });
 
             console.log(`💬 ${chip.name} respondeu: ${chipResponse} para Bot`);
@@ -241,10 +253,13 @@ const Heating = () => {
           // Chip iniciou - bot responde
           await supabase.from("messages").insert({
             user_id: user?.id,
-            from_chip_id: "bot",
+            from_chip_id: null,
             to_chip_id: chipId,
             content: botResponse,
-            status: "sent"
+            status: "sent",
+            from_bot: true,
+            to_bot: false,
+            message_type: "bot"
           });
 
           console.log(`💬 Bot respondeu: ${botResponse} para ${chip.name}`);
@@ -272,18 +287,24 @@ const Heating = () => {
         if (!isInitiatedByChip) {
           await supabase.from("messages").insert({
             user_id: user?.id,
-            from_chip_id: "bot",
+            from_chip_id: null,
             to_chip_id: chipId,
             content: emergencyResponse,
-            status: "sent"
+            status: "sent",
+            from_bot: true,
+            to_bot: false,
+            message_type: "bot"
           });
         } else {
           await supabase.from("messages").insert({
             user_id: user?.id,
-            from_chip_id: "bot",
+            from_chip_id: null,
             to_chip_id: chipId,
             content: emergencyResponse,
-            status: "sent"
+            status: "sent",
+            from_bot: true,
+            to_bot: false,
+            message_type: "bot"
           });
         }
         
@@ -703,8 +724,8 @@ const Heating = () => {
                   {messages.slice(0, 10).map((message) => {
                     const fromChip = chips.find(c => c.id === message.from_chip_id);
                     const toChip = chips.find(c => c.id === message.to_chip_id);
-                    const isFromBot = message.from_chip_id === "bot";
-                    const isToBot = message.to_chip_id === "bot";
+                    const isFromBot = message.from_bot || message.message_type === "bot";
+                    const isToBot = message.to_bot;
 
                     return (
                       <div key={message.id} className="border rounded-lg p-3 space-y-2">
