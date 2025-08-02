@@ -178,8 +178,11 @@ const Heating = () => {
       }
       
       // Sempre envia resposta para manter fluxo contínuo
+      console.log(`✅ Enviando resposta do bot: ${botResponse}`);
+      
       setTimeout(async () => {
         if (!isInitiatedByChip) {
+          // Bot iniciou - salva resposta do bot
           await supabase.from("messages").insert({
             user_id: user?.id,
             from_chip_id: "bot",
@@ -187,6 +190,8 @@ const Heating = () => {
             content: botResponse,
             status: "sent"
           });
+
+          console.log(`💬 Bot enviou: ${botResponse} para ${chip.name}`);
 
           // Chip sempre responde para manter conversação ativa
           setTimeout(async () => {
@@ -218,6 +223,8 @@ const Heating = () => {
               status: "sent"
             });
 
+            console.log(`💬 ${chip.name} respondeu: ${chipResponse} para Bot`);
+
             await supabase
               .from("chips")
               .update({ 
@@ -231,6 +238,7 @@ const Heating = () => {
           }, Math.random() * 2000 + 1000);
 
         } else {
+          // Chip iniciou - bot responde
           await supabase.from("messages").insert({
             user_id: user?.id,
             from_chip_id: "bot",
@@ -238,6 +246,8 @@ const Heating = () => {
             content: botResponse,
             status: "sent"
           });
+
+          console.log(`💬 Bot respondeu: ${botResponse} para ${chip.name}`);
 
           await supabase
             .from("chips")
@@ -253,7 +263,36 @@ const Heating = () => {
       }, Math.random() * 2000 + 500);
 
     } catch (error) {
-      console.error("Erro ao enviar mensagem para bot:", error);
+      console.error("❌ Erro ao enviar mensagem para bot:", error);
+      
+      // Em caso de erro total, ainda salva uma mensagem de fallback
+      const emergencyResponse = "Oi! Como você está? 😊";
+      
+      try {
+        if (!isInitiatedByChip) {
+          await supabase.from("messages").insert({
+            user_id: user?.id,
+            from_chip_id: "bot",
+            to_chip_id: chipId,
+            content: emergencyResponse,
+            status: "sent"
+          });
+        } else {
+          await supabase.from("messages").insert({
+            user_id: user?.id,
+            from_chip_id: "bot",
+            to_chip_id: chipId,
+            content: emergencyResponse,
+            status: "sent"
+          });
+        }
+        
+        console.log(`🆘 Fallback de emergência ativado: ${emergencyResponse}`);
+        loadMessages();
+        loadChips();
+      } catch (fallbackError) {
+        console.error("❌ Erro crítico - nem fallback funcionou:", fallbackError);
+      }
     }
   };
 
