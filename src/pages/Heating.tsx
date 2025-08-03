@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Flame, Bot, MessageCircle, Play, Square, Clock, MessageSquare, BarChart3, Settings } from "lucide-react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { ChatAnalytics } from "@/components/ChatAnalytics";
+import { WhatsAppQRConnect } from "@/components/WhatsAppQRConnect";
 import type { User } from "@supabase/supabase-js";
 
 interface Chip {
@@ -787,52 +788,75 @@ const Heating = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações do Sistema</CardTitle>
-                <CardDescription>
-                  Personalize o comportamento do aquecimento
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Intervalo de Mensagens (segundos)</label>
-                    <Select defaultValue="30">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10 segundos</SelectItem>
-                        <SelectItem value="30">30 segundos</SelectItem>
-                        <SelectItem value="60">1 minuto</SelectItem>
-                        <SelectItem value="120">2 minutos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Conexão WhatsApp */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold">Conectar WhatsApp</h2>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Conecte seus chips WhatsApp via QR Code
+                </p>
+                <WhatsAppQRConnect 
+                  sessionId={user?.id || "default"}
+                  onConnectionSuccess={() => {
+                    toast({
+                      title: "🔥 WhatsApp Conectado!",
+                      description: "Chip conectado com sucesso! Pronto para aquecimento.",
+                    });
+                    loadChips();
+                  }}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Máximo de Mensagens por Hora</label>
-                    <Select defaultValue="20">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10 mensagens</SelectItem>
-                        <SelectItem value="20">20 mensagens</SelectItem>
-                        <SelectItem value="50">50 mensagens</SelectItem>
-                        <SelectItem value="100">100 mensagens</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              {/* Configurações do Sistema */}
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configurações do Sistema</CardTitle>
+                    <CardDescription>
+                      Personalize o comportamento do aquecimento
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Intervalo de Mensagens (segundos)</label>
+                        <Select defaultValue="30">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10 segundos</SelectItem>
+                            <SelectItem value="30">30 segundos</SelectItem>
+                            <SelectItem value="60">1 minuto</SelectItem>
+                            <SelectItem value="120">2 minutos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <Button className="w-full">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Salvar Configurações
-                </Button>
-              </CardContent>
-            </Card>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Máximo de Mensagens por Hora</label>
+                        <Select defaultValue="20">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10 mensagens</SelectItem>
+                            <SelectItem value="20">20 mensagens</SelectItem>
+                            <SelectItem value="50">50 mensagens</SelectItem>
+                            <SelectItem value="100">100 mensagens</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Button className="w-full">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Salvar Configurações
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
