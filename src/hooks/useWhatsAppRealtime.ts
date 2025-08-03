@@ -49,7 +49,7 @@ export const useWhatsAppRealtime = () => {
       });
 
       socketRef.current.on('qr', (qrImage: string) => {
-        console.log('📱 QR Code recebido:', qrImage);
+        console.log('📱 QR Code recebido:', qrImage ? 'QR recebido com sucesso' : 'QR vazio');
         setState(prev => ({
           ...prev,
           qrCode: qrImage,

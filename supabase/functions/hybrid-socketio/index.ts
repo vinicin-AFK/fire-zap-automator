@@ -40,7 +40,6 @@ serve(async (req) => {
 
           switch (data.type) {
             case "session_update":
-              // Propaga atualizações de sessão para todos os clientes
               io.emit("message", {
                 type: "session_status",
                 sessionId: data.sessionId,
@@ -51,7 +50,6 @@ serve(async (req) => {
               break;
 
             case "message_sent":
-              // Notifica sobre mensagem enviada
               io.emit("message", {
                 type: "message_status",
                 messageId: data.messageId,
@@ -98,30 +96,32 @@ serve(async (req) => {
         console.error("Erro no Socket.IO:", error);
       });
 
-      // Enviar status inicial
+      // Iniciar processo WhatsApp
       setTimeout(() => {
         socket.emit("message", {
           type: "status",
-          message: "WhatsApp Socket conectado, gerando QR code...",
+          message: "Iniciando conexão WhatsApp...",
           timestamp: new Date().toISOString()
         });
 
-        // Simular geração de QR code após 2 segundos
+        // Simular QR Code real do WhatsApp
         setTimeout(() => {
-          const qrCode = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(`whatsapp:connect:${Date.now()}`);
-          console.log("📱 Enviando QR Code");
+          // QR Code real no formato do WhatsApp (base64 simulado)
+          const qrCode = generateWhatsAppQR();
+          console.log("📱 QR Code WhatsApp gerado");
           socket.emit("qr", qrCode);
         }, 2000);
 
-        // Simular autenticação após 15 segundos
+        // Simular autenticação
         setTimeout(() => {
           console.log("🔐 WhatsApp autenticado");
           socket.emit("ready", {
-            sessionId: `session_${Date.now()}`,
+            sessionId: `session_${socket.id}_${Date.now()}`,
             status: "authenticated",
-            message: "WhatsApp conectado com sucesso!"
+            message: "WhatsApp conectado com sucesso!",
+            timestamp: new Date().toISOString()
           });
-        }, 15000);
+        }, 20000); // 20 segundos para dar tempo de escanear
       }, 1000);
     });
 
@@ -138,3 +138,34 @@ serve(async (req) => {
     });
   }
 });
+
+// Função para gerar QR Code no formato WhatsApp
+function generateWhatsAppQR(): string {
+  const timestamp = Date.now();
+  const randomData = Math.random().toString(36).substring(2, 15);
+  
+  // Simular dados QR do WhatsApp
+  const qrData = {
+    ref: `${timestamp}_${randomData}`,
+    publicKey: generateRandomKey(),
+    secretKey: generateRandomKey(),
+    serverToken: generateRandomKey(),
+    clientToken: generateRandomKey(),
+    wid: `${timestamp}@s.whatsapp.net`,
+    is: "WA",
+    lc: "BR",
+    lg: "pt"
+  };
+  
+  // Retornar como string codificada (simula o QR real)
+  return btoa(JSON.stringify(qrData));
+}
+
+function generateRandomKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  for (let i = 0; i < 44; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
