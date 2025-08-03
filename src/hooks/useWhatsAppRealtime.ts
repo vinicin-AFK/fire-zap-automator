@@ -31,15 +31,17 @@ export const useWhatsAppRealtime = () => {
     console.log('🔄 Conectando ao Socket.IO WhatsApp...');
     
     try {
-      const socketUrl = "https://fuohmclakezkvgaiarao.functions.supabase.co/functions/v1/hybrid-socketio";
+      const socketUrl = "https://fuohmclakezkvgaiarao.functions.supabase.co/hybrid-socketio";
+      console.log('🔗 Conectando na URL:', socketUrl);
       
       socketRef.current = io(socketUrl, {
-        transports: ['websocket'],
-        autoConnect: true
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+        timeout: 10000
       });
 
       socketRef.current.on('connect', () => {
-        console.log('✅ Socket.IO WhatsApp conectado');
+        console.log('✅ Socket.IO WhatsApp conectado com sucesso');
         reconnectAttempts.current = 0;
         setState(prev => ({ 
           ...prev, 
@@ -76,11 +78,20 @@ export const useWhatsAppRealtime = () => {
       });
 
       socketRef.current.on('error', (error: any) => {
-        console.error('📨 Erro recebido:', error);
+        console.error('❌ Erro Socket.IO:', error);
         setState(prev => ({
           ...prev,
           connectionStatus: 'error',
-          error: error?.message || 'Erro desconhecido'
+          error: error?.message || 'Erro de conexão Socket.IO'
+        }));
+      });
+
+      socketRef.current.on('connect_error', (error: any) => {
+        console.error('❌ Erro de conexão Socket.IO:', error);
+        setState(prev => ({
+          ...prev,
+          connectionStatus: 'error',
+          error: `Falha ao conectar: ${error?.message || 'Erro desconhecido'}`
         }));
       });
 
