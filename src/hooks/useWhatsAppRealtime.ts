@@ -31,7 +31,7 @@ export const useWhatsAppRealtime = () => {
     console.log('🔄 Conectando ao WebSocket WhatsApp...');
     
     try {
-      const wsUrl = "wss://fuohmclakezkvgaiarao.functions.supabase.co/whatsapp-realtime";
+      const wsUrl = "wss://fire-zap-automator.railway.internal";
       console.log('🔗 Conectando na URL:', wsUrl);
       
       wsRef.current = new WebSocket(wsUrl);
