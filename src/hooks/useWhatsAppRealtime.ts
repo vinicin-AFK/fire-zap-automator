@@ -30,7 +30,7 @@ export const useWhatsAppRealtime = () => {
     console.log('🔄 Conectando ao Socket.IO do WhatsApp...');
 
     try {
-      const socketUrl = "wss://fire-zap-automator-production-d511.up.railway.app";
+      const socketUrl = "wss://fuohmclakezkvgaiarao.functions.supabase.co/functions/v1/whatsapp-websocket";
       const socket = io(socketUrl, {
         transports: ['websocket'],
         reconnection: false,

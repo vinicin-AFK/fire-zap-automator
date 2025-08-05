@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.verify-whatsapp-credentials]
 verify_jwt = false
+
+[functions.whatsapp-websocket]
+verify_jwt = false
