@@ -45,7 +45,8 @@ serve(async (req) => {
       
       socket.send(JSON.stringify({
         type: 'qr',
-        qrCode: mockQRCode,
+        qr: mockQRCode,
+        qrCode: mockQRCode, // compatibilidade
         timestamp: new Date().toISOString()
       }));
     }, 2000);
