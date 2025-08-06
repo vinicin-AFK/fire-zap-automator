@@ -1,55 +1,37 @@
 const express = require("express");
-const http = require("http");
+const { exec } = require("child_process");
 const cors = require("cors");
 const { Server } = require("socket.io");
-const fs = require("fs");
-const path = require("path");
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-} = require("@whiskeysockets/baileys");
+const http = require("http");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
-const sessions = {};
 
-async function startSession(sessionId) {
-  const sessionPath = path.join(__dirname, "sessions", sessionId);
-  if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+app.use(cors());
 
-  const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
-  const { version } = await fetchLatestBaileysVersion();
-  const sock = makeWASocket({ version, auth: state });
-  sock.ev.on("creds.update", saveCreds);
+let isBotRunning = false;
 
-  sock.ev.on("connection.update", (update) => {
-    const { connection, qr } = update;
-    if (qr) sessions[sessionId].qr = qr;
-    if (connection === "open") sessions[sessionId].connected = true;
-    if (connection === "close") {
-      sessions[sessionId].connected = false;
-      setTimeout(() => startSession(sessionId), 3000);
+app.get("/start-bot", (req, res) => {
+  if (isBotRunning) return res.send("Bot já está rodando!");
+
+  const subprocess = exec("node robo.js", (err, stdout, stderr) => {
+    if (err) {
+      console.error("Erro ao iniciar bot:", err);
+      return res.status(500).send("Erro ao iniciar bot.");
     }
-    io.emit("session-update", {
-      sessionId,
-      qr: sessions[sessionId]?.qr || null,
-      connected: sessions[sessionId]?.connected || false,
-    });
   });
 
-  sessions[sessionId] = { sock, connected: false, qr: null };
-}
-
-io.on("connection", (socket) => {
-  socket.on("create-session", ({ sessionId }) => {
-    if (!sessions[sessionId]) startSession(sessionId);
-    else socket.emit("session-update", sessions[sessionId]);
-  });
+  isBotRunning = true;
+  res.send("Bot iniciado com sucesso.");
 });
 
-const port = process.env.PORT || 3000;
-server.listen(port, "0.0.0.0", () =>
-  console.log(`🔥 FireZap rodando na porta ${port}`)
-);
+io.on("connection", (socket) => {
+  console.log("Frontend conectado.");
+});
+
+server.listen(3000, () => {
+  console.log("🔥 Servidor backend iniciado na porta 3000");
+});
+
+module.exports = io;
