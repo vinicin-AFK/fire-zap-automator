@@ -6,3 +6,8 @@ cmds = ["npm install --legacy-peer-deps"]
 
 [start]
 cmd = "npm start"
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacksPlan.env]
+NODE_VERSION = "20"
