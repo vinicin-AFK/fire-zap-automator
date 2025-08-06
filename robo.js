@@ -10,11 +10,11 @@ const client = new Client({
 client.on("qr", (qr) => {
   qrcode.generate(qr, { small: true });
   io.emit("qr", qr);
-  console.log("QR enviado para frontend via socket.");
+  console.log("QR enviado via socket");
 });
 
 client.on("ready", () => {
-  console.log("✅ Cliente conectado com sucesso.");
+  console.log("✅ Conectado ao WhatsApp com sucesso");
   io.emit("status", "connected");
 });
 
