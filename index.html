@@ -1,34 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title>QR Code WhatsApp</title>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fire-zap-automator</title>
+    <meta name="description" content="Lovable Generated Project" />
+    <meta name="author" content="Lovable" />
+
+    <meta property="og:title" content="fire-zap-automator" />
+    <meta property="og:description" content="Lovable Generated Project" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
-  <body style="text-align: center; font-family: sans-serif">
-    <h1>Conectar WhatsApp</h1>
-    <button onclick="startBot()">Gerar QR Code</button>
-    <div id="status"></div>
-    <img id="qr-img" style="margin-top: 20px" />
 
-    <script>
-      const socket = io("https://SEU-BACKEND.onrender.com");
-
-      socket.on("qr", (qr) => {
-        document.getElementById("qr-img").src =
-          "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" +
-          encodeURIComponent(qr);
-      });
-
-      socket.on("status", (status) => {
-        document.getElementById("status").innerText =
-          status === "connected" ? "✅ Conectado" : "";
-      });
-
-      function startBot() {
-        fetch("https://SEU-BACKEND.onrender.com/start-bot")
-          .then((res) => res.text())
-          .then((txt) => alert(txt));
-      }
-    </script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
