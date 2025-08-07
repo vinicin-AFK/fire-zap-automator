@@ -172,9 +172,9 @@ const Dashboard = () => {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-4 mb-8">
-          <Button onClick={() => navigate("/connect-number")} className="shadow-fire">
+          <Button onClick={() => navigate("/hybrid")} className="shadow-fire">
             <Plus className="h-4 w-4 mr-2" />
-            Conectar Novo Número
+            Conexões WhatsApp
           </Button>
           <Button variant="secondary" onClick={() => navigate("/heating")}>
             <Flame className="h-4 w-4 mr-2" />
@@ -198,7 +198,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-4">
                   Conecte seu primeiro número do WhatsApp para começar
                 </p>
-                <Button onClick={() => navigate("/connect-number")}>
+                <Button onClick={() => navigate("/hybrid")}>
                   <Plus className="h-4 w-4 mr-2" />
                   Conectar Primeiro Número
                 </Button>
