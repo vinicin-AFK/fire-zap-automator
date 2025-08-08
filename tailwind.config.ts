@@ -26,8 +26,7 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))',
-					glow: 'hsl(var(--primary-glow))'
+					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -53,7 +52,6 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				'fire-pulse': 'var(--fire-pulse)',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -67,22 +65,15 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-fire': 'var(--gradient-fire)',
-				'gradient-fire-intense': 'var(--gradient-fire-intense)',
-				'gradient-dark': 'var(--gradient-dark)',
-				'gradient-ember': 'var(--gradient-ember)'
+				'gradient-dark': 'var(--gradient-dark)'
 			},
 			boxShadow: {
-				'fire': 'var(--shadow-fire)',
-				'fire-intense': 'var(--shadow-fire-intense)',
-				'ember': 'var(--shadow-ember)'
+				'fire': 'var(--shadow-fire)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
-			},
-			transitionTimingFunction: {
-				'fire': 'var(--transition-fire)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -100,29 +91,11 @@ export default {
 					to: {
 						height: '0'
 					}
-				},
-				'fire-pulse': {
-					'0%, 100%': {
-						opacity: '1'
-					},
-					'50%': {
-						opacity: '0.7'
-					}
-				},
-				'fire-glow': {
-					'0%': {
-						boxShadow: '0 0 20px var(--fire-pulse)'
-					},
-					'100%': {
-						boxShadow: '0 0 40px var(--fire-pulse)'
-					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fire-pulse': 'fire-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'fire-glow': 'fire-glow 3s ease-in-out infinite alternate'
+				'accordion-up': 'accordion-up 0.2s ease-out'
 			}
 		}
 	},

@@ -81,7 +81,8 @@ export const useHybridAPI = () => {
 
   // Socket.IO para atualizações real-time
   const connectWebSocket = () => {
-    const socketUrl = 'https://fire-zap-automator-production-d511.up.railway.app';
+    const projectId = 'fuohmclakezkvgaiarao';
+    const socketUrl = `https://${projectId}.functions.supabase.co/functions/v1/hybrid-socketio`;
     
     const socket: Socket = io(socketUrl, {
       transports: ['websocket'],

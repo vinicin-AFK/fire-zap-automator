@@ -1,34 +1,19 @@
 project_id = "fuohmclakezkvgaiarao"
 
-[functions.whatsapp-realtime]
-verify_jwt = false
-
-[functions.hybrid-websocket]
-verify_jwt = false
-
-[functions.hybrid-socketio]
-verify_jwt = false
-
-[functions.whatsapp-socketio]
-verify_jwt = false
-
-[functions.baileys-session]
-verify_jwt = false
-
-[functions.business-api]
+[functions.whatsapp-bot]
 verify_jwt = false
 
 [functions.whatsapp-webhook]
 verify_jwt = false
 
-[functions.whatsapp-qr]
+[functions.baileys-session]
 verify_jwt = false
 
-[functions.whatsapp-bot]
+[functions.hybrid-websocket]
 verify_jwt = false
 
-[functions.verify-whatsapp-credentials]
+[functions.business-api]
 verify_jwt = false
 
-[functions.whatsapp-websocket]
+[functions.hybrid-socketio]
 verify_jwt = false
