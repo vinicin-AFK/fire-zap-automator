@@ -1,7 +1,7 @@
-import WhatsAppManager from "@/components/WhatsAppManager";
+import { HybridConnection } from "@/components/HybridConnection";
 
 const HybridDashboard = () => {
-  return <WhatsAppManager />;
+  return <HybridConnection />;
 };
 
 export default HybridDashboard;

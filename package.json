@@ -38,7 +38,6 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
-    "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.6.1",
     "clsx": "^1.2.1",
     "cmdk": "^0.2.1",
@@ -50,7 +49,6 @@
     "lovable-tagger": "^1.1.9",
     "lucide-react": "^0.263.1",
     "next-themes": "^0.2.1",
-    "postcss": "^8.5.6",
     "qrcode-terminal": "^0.12.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -63,7 +61,6 @@
     "socket.io-client": "^4.8.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^1.14.0",
-    "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "whatsapp-web.js": "^1.21.1"
   },
