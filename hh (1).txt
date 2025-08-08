@@ -1,0 +1,53 @@
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+
+export default function WhatsAppQR() {
+  const [qr, setQr] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const SERVER_URL = "https://SEU-BACKEND-PUBLICO"; // Substitua pela URL pública correta
+
+    const socket = io(SERVER_URL, { transports: ["websocket"] });
+
+    socket.on("connect_error", (err) => {
+      console.error("Falha na conexão ao backend:", err.message);
+      setError("Erro ao conectar com o servidor backend.");
+    });
+
+    socket.emit("create-session", { sessionId: "usuario123" });
+
+    socket.on("session-update", (data) => {
+      if (data.qr) setQr(data.qr);
+      if (data.connected) setConnected(true);
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
+  return (
+    <div style={{ textAlign: "center", margin: 20 }}>
+      <h1>🔥 Conectar WhatsApp</h1>
+
+      {error ? (
+        <p style={{ color: "red" }}>{error}</p>
+      ) : connected ? (
+        <p style={{ color: "green", fontSize: "18px" }}>✅ Conectado com sucesso!</p>
+      ) : qr ? (
+        <>
+          <p>📱 Escaneie o QR Code abaixo:</p>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+              qr
+            )}`}
+            alt="QR Code"
+            style={{ marginTop: 10 }}
+          />
+        </>
+      ) : (
+        <p>Gerando QR Code...</p>
+      )}
+    </div>
+  );
+}
