@@ -14,9 +14,7 @@ app.use(cors());
 
 app.get("/start-bot", (req, res) => {
   if (isBotRunning) return res.send("Bot já está rodando!");
-  exec("node robo.js", (err) => {
-    if (err) return res.status(500).send("Erro ao iniciar bot.");
-  });
+  exec("node robo.js");
   isBotRunning = true;
   res.send("Bot iniciado com sucesso.");
 });
