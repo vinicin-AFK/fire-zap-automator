@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 
 interface WhatsAppRealtimeState {
   qrCode: string | null;
@@ -18,151 +17,152 @@ export const useWhatsAppRealtime = () => {
     error: null,
   });
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
 
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
+  const connectSocketIO = useCallback((sessionId?: string) => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
 
-    console.log('🔄 Conectando ao WebSocket WhatsApp...');
-    
+    setState(prev => ({ ...prev, connectionStatus: 'connecting' }));
+    console.log('🔄 Conectando ao WebSocket do WhatsApp...');
+
     try {
-      const wsUrl = "wss://fuohmclakezkvgaiarao.functions.supabase.co/whatsapp-realtime";
-      console.log('🔗 Conectando na URL:', wsUrl);
-      
-      wsRef.current = new WebSocket(wsUrl);
+      const socketUrl = "wss://fuohmclakezkvgaiarao.functions.supabase.co/functions/v1/whatsapp-websocket";
+      const socket = new WebSocket(socketUrl);
 
-      wsRef.current.onopen = () => {
-        console.log('✅ WebSocket WhatsApp conectado com sucesso');
-        reconnectAttempts.current = 0;
-        setState(prev => ({ 
-          ...prev, 
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        console.log('✅ Conectado ao servidor WebSocket!');
+        setState(prev => ({
+          ...prev,
           connectionStatus: 'connecting',
-          error: null 
+          error: null,
         }));
+        reconnectAttempts.current = 0;
       };
 
-      wsRef.current.onmessage = (event) => {
+      socket.onclose = () => {
+        console.warn('⚠️ Desconectado do servidor WebSocket');
+        setState(prev => ({
+          ...prev,
+          connectionStatus: 'disconnected',
+          isConnected: false,
+        }));
+        attemptReconnect();
+      };
+
+      socket.onerror = (error: any) => {
+        console.error('❌ Erro de conexão com WebSocket:', error);
+        setState(prev => ({
+          ...prev,
+          connectionStatus: 'error',
+          error: 'Erro de conexão com o WebSocket',
+        }));
+        attemptReconnect();
+      };
+
+      socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           console.log('📨 Mensagem recebida:', data);
 
           switch (data.type) {
             case 'qr':
-              console.log('📱 QR Code recebido');
+              console.log('📷 QR Code recebido');
               setState(prev => ({
                 ...prev,
-                qrCode: data.qr,
-                connectionStatus: 'qr_ready'
+                qrCode: data.qrCode,
+                connectionStatus: 'qr_ready',
               }));
               break;
 
-            case 'authenticated':
-              console.log('🔐 WhatsApp autenticado');
+            case 'ready':
+              console.log('🤖 Sessão WhatsApp pronta');
               setState(prev => ({
                 ...prev,
                 connectionStatus: 'connected',
                 isConnected: true,
+                sessionId: data.sessionId,
                 qrCode: null,
-                sessionId: data.sessionId
               }));
               break;
 
             case 'status':
-              console.log('ℹ️ Status:', data.message);
+              console.log('📊 Status recebido:', data.message);
               setState(prev => ({
                 ...prev,
-                connectionStatus: 'connecting'
+                connectionStatus: data.status || 'connecting',
+              }));
+              break;
+
+            case 'error':
+              console.error('🚨 Erro do servidor:', data.message);
+              setState(prev => ({
+                ...prev,
+                connectionStatus: 'error',
+                error: data.message,
               }));
               break;
 
             default:
-              console.log('📨 Tipo de mensagem:', data.type);
+              console.log('❓ Tipo de mensagem desconhecido:', data.type);
           }
         } catch (error) {
           console.error('❌ Erro ao processar mensagem:', error);
         }
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('❌ Erro WebSocket:', error);
-        setState(prev => ({
-          ...prev,
-          connectionStatus: 'error',
-          error: 'Erro de conexão WebSocket'
-        }));
-      };
-
-      wsRef.current.onclose = (event) => {
-        console.log('❌ WebSocket desconectado:', event.code, event.reason);
-        setState(prev => ({
-          ...prev,
-          connectionStatus: 'disconnected',
-          isConnected: false
-        }));
-
-        // Tentar reconectar se não foi fechamento intencional
-        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
-          reconnectAttempts.current++;
-          console.log(`🔄 Tentativa de reconexão ${reconnectAttempts.current}/${maxReconnectAttempts}`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connectWebSocket();
-          }, 2000 * reconnectAttempts.current);
-        }
-      };
-
-    } catch (error) {
-      console.error('❌ Erro ao criar WebSocket:', error);
+    } catch (error: any) {
+      console.error('Erro inesperado ao conectar:', error);
       setState(prev => ({
         ...prev,
         connectionStatus: 'error',
-        error: 'Erro ao conectar WebSocket'
+        error: error.message || 'Erro inesperado',
       }));
     }
   }, []);
 
-  const connectToWhatsApp = useCallback(async (phoneNumber: string) => {
-    console.log('🔄 Iniciando conexão WhatsApp para:', phoneNumber);
-    
-    try {
-      connectWebSocket();
-      
-      // Aguardar conexão WebSocket
-      setTimeout(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'connect',
-            phoneNumber: phoneNumber
-          }));
-        }
-      }, 1000);
-      
-    } catch (error) {
-      console.error('❌ Erro ao conectar WhatsApp:', error);
-      setState(prev => ({
-        ...prev,
-        connectionStatus: 'error',
-        error: error instanceof Error ? error.message : 'Erro inesperado'
-      }));
+  const attemptReconnect = useCallback(() => {
+    if (reconnectAttempts.current >= maxReconnectAttempts) {
+      console.error('🚫 Número máximo de tentativas de reconexão atingido.');
+      return;
     }
-  }, [connectWebSocket]);
+
+    reconnectAttempts.current += 1;
+    const delay = 3000;
+
+    console.log(`🔁 Tentando reconectar em ${delay / 1000} segundos... (${reconnectAttempts.current}/${maxReconnectAttempts})`);
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      connectSocketIO();
+    }, delay);
+  }, [connectSocketIO]);
+
+  useEffect(() => {
+    connectSocketIO();
+
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, [connectSocketIO]);
 
   const disconnect = useCallback(() => {
-    console.log('🔌 Desconectando WebSocket WhatsApp...');
-    
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
     }
 
-    if (wsRef.current) {
-      wsRef.current.close(1000, 'User disconnected');
-      wsRef.current = null;
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
     }
 
     setState({
@@ -174,22 +174,10 @@ export const useWhatsAppRealtime = () => {
     });
   }, []);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return {
     ...state,
-    connectToWhatsApp,
+    connectToWhatsApp: connectSocketIO,
     disconnect,
-    reconnect: connectWebSocket,
+    reconnect: connectSocketIO,
   };
 };
