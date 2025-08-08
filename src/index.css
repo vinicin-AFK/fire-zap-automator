@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Fire Zap Design System - Laranja-fogo + preto + branco */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3%;
+
+    /* Fire Orange Primary */
+    --primary: 16 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Fire Accent Orange */
+    --secondary: 20 100% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 16 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 100%;
+    --ring: 16 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Fire Gradients */
+    --gradient-fire: linear-gradient(135deg, hsl(16 100% 50%), hsl(20 100% 55%));
+    --gradient-dark: linear-gradient(135deg, hsl(0 0% 3%), hsl(0 0% 10%));
+    
+    /* Fire Shadow */
+    --shadow-fire: 0 10px 30px -10px hsl(16 100% 50% / 0.3);
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 16 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 16 100% 50%;
+  }
+
+  .dark {
+    /* Fire Zap Dark Mode */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 16 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 100% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 16 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 8%;
+    --ring: 16 100% 50%;
+    
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 16 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 16 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
