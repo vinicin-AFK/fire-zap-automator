@@ -62,3 +62,9 @@
     "whatsapp-web.js": "^1.21.1"
   }
 }
+"scripts": {
+  "start": "node server.js",
+  "dev": "node server.js",
+  "build:dev": "vite build --mode development"
+}
+npm run
