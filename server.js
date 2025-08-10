@@ -1,244 +1,163 @@
-// server.js
-import express from 'express';
-import http from 'node:http';
-import cors from 'cors';
-import path from 'node:path';
-import fs from 'node:fs';
-import { Server as IOServer } from 'socket.io';
-import { Client, LocalAuth } from 'whatsapp-web.js';
-import qrcode from 'qrcode';
-import qrcodeTerminal from 'qrcode-terminal';
+// server.js (CommonJS)
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const { Server: IOServer } = require('socket.io');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
 const PORT = process.env.PORT || 3000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'; // ajuste se quiser restringir
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
-// ------------------ Infra básica ------------------
 const app = express();
 const server = http.createServer(app);
-const io = new IOServer(server, {
-  cors: { origin: CORS_ORIGIN, methods: ['GET', 'POST', 'DELETE'] },
-});
+const io = new IOServer(server, { cors: { origin: CORS_ORIGIN, methods: ['GET', 'POST', 'DELETE'] } });
+
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
-// (Opcional) servir /public para testes de QR simples
-const PUBLIC_DIR = path.resolve('./public');
-if (fs.existsSync(PUBLIC_DIR)) app.use(express.static(PUBLIC_DIR));
-
-// Espaço do Socket.IO dedicado ao WPP
+// Namespace específico pro WhatsApp
 const wppNSP = io.of('/wpp');
 
-// ------------------ Session Manager ------------------
-class WppSession {
+// ---------------- Process Manager (robo.js) ----------------
+class BotProcess {
   constructor(sessionId) {
     this.sessionId = sessionId;
-    this.status = 'starting'; // starting | qr | ready | disconnected | error
-    this.qrDataUrl = null;
+    this.status = 'starting'; // starting | qr | ready | disconnected | error | exited
+    this.qr = null;
+    this.buffer = '';
 
-    this.client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: path.resolve('./.wwebjs_auth'),
-        clientId: sessionId,
-      }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-extensions',
-        ],
-      },
+    // Importante: usar o mesmo Node para rodar o bot
+    const nodeExec = process.execPath; // ex.: /usr/bin/node
+    const scriptPath = path.resolve('./robo.js');
+
+    this.child = spawn(nodeExec, [scriptPath, '--session', sessionId], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    this._bindEvents();
-    this._init();
-  }
+    this.child.stdout.setEncoding('utf8');
+    this.child.stderr.setEncoding('utf8');
 
-  _bindEvents() {
-    this.client.on('qr', async (qr) => {
-      // Terminal para debug
-      qrcodeTerminal.generate(qr, { small: true });
-      // DataURL PNG para UI
-      this.qrDataUrl = await qrcode.toDataURL(qr, { width: 320, errorCorrectionLevel: 'M' });
-      this.status = 'qr';
-      this._emit('qr', { qr: this.qrDataUrl });
-      this._emit('status', { status: this.status });
-      console.log(`[${this.sessionId}] Novo QR gerado.`);
-    });
+    this.child.stdout.on('data', (chunk) => this._onData(chunk));
+    this.child.stderr.on('data', (chunk) => this._onData(chunk, true));
 
-    this.client.on('authenticated', () => {
-      console.log(`[${this.sessionId}] Autenticado.`);
-    });
-
-    this.client.on('ready', () => {
-      console.log(`[${this.sessionId}] Sessão pronta.`);
-      this.qrDataUrl = null;
-      this.status = 'ready';
-      this._emit('qr', { qr: null });
-      this._emit('status', { status: this.status });
-    });
-
-    this.client.on('disconnected', async (reason) => {
-      console.warn(`[${this.sessionId}] Disconnected: ${reason}`);
-      this.status = 'disconnected';
-      this._emit('status', { status: this.status, reason });
-      // Tenta reconectar de forma simples
-      setTimeout(() => this.reconnect(), 1500);
-    });
-
-    this.client.on('auth_failure', (msg) => {
-      console.error(`[${this.sessionId}] Auth failure: ${msg}`);
-      this.status = 'error';
-      this._emit('status', { status: this.status, error: 'auth_failure' });
+    this.child.on('exit', (code, sig) => {
+      this.status = 'exited';
+      this._emit('status', { status: this.status, code, sig });
     });
   }
 
-  async _init() {
-    try {
-      await this.client.initialize();
-    } catch (e) {
-      console.error(`[${this.sessionId}] Erro ao inicializar:`, e?.message);
-      this.status = 'error';
-      this._emit('status', { status: this.status, error: e?.message });
+  _onData(chunk, isErr = false) {
+    this.buffer += chunk;
+    let idx;
+    while ((idx = this.buffer.indexOf('\n')) !== -1) {
+      const line = this.buffer.slice(0, idx).trim();
+      this.buffer = this.buffer.slice(idx + 1);
+
+      // Debug opcional:
+      // if (isErr) console.error(`[${this.sessionId}] ${line}`);
+      // else console.log(`[${this.sessionId}] ${line}`);
+
+      // Parseia marcadores
+      if (line.startsWith('QR_DATAURL:')) {
+        const dataUrl = line.replace('QR_DATAURL:', '');
+        this.qr = dataUrl;
+        this.status = 'qr';
+        this._emit('qr', { qr: dataUrl });
+        this._emit('status', { status: this.status });
+      } else if (line.startsWith('QR_RAW:')) {
+        // se quiser usar o QR cru pra geração no frontend
+      } else if (line.startsWith('STATUS:')) {
+        const st = line.replace('STATUS:', '');
+        if (st.startsWith('ready')) {
+          this.status = 'ready';
+          this.qr = null;
+        } else if (st.startsWith('authenticated')) {
+          this.status = 'authenticated';
+        } else if (st.startsWith('disconnected')) {
+          this.status = 'disconnected';
+        } else if (st.startsWith('error')) {
+          this.status = 'error';
+        }
+        this._emit('status', { status: this.status, raw: st });
+        if (this.status === 'ready') this._emit('qr', { qr: null });
+      }
     }
-  }
-
-  async reconnect() {
-    try { await this.client.destroy(); } catch {}
-    this.client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: path.resolve('./.wwebjs_auth'),
-        clientId: this.sessionId,
-      }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-extensions',
-        ],
-      },
-    });
-    this._bindEvents();
-    this.status = 'starting';
-    this._emit('status', { status: this.status });
-    await this.client.initialize();
   }
 
   _emit(event, payload) {
-    // Emite no namespace /wpp para a "sala" da sessão
     wppNSP.to(this.sessionId).emit(event, { sessionId: this.sessionId, ...payload });
   }
 
-  getStatus() {
-    return this.status;
-  }
+  getStatus() { return this.status; }
+  getQR() { return this.qr; }
 
-  getQR() {
-    return this.qrDataUrl;
-  }
-
-  async sendText(to, message) {
-    const jid = String(to).includes('@') ? String(to) : `${to}@c.us`;
-    const msg = await this.client.sendMessage(jid, String(message));
-    return { id: msg.id.id, timestamp: msg.timestamp };
-  }
-
-  async logout() {
-    try { await this.client.logout(); } catch {}
-    const sessPath = path.join('./.wwebjs_auth', `session-${this.sessionId}`);
-    if (fs.existsSync(sessPath)) fs.rmSync(sessPath, { recursive: true, force: true });
-    this.status = 'disconnected';
-    this.qrDataUrl = null;
-    this._emit('status', { status: this.status });
-  }
-}
-
-class WppManager {
-  constructor() { this.sessions = new Map(); }
-  ensure(sessionId) {
-    if (!this.sessions.has(sessionId)) {
-      const s = new WppSession(sessionId);
-      this.sessions.set(sessionId, s);
+  stop() {
+    if (this.child && !this.child.killed) {
+      this.child.kill('SIGTERM');
     }
-    return this.sessions.get(sessionId);
   }
-  get(sessionId) { return this.sessions.get(sessionId) || null; }
-  all() { return Array.from(this.sessions.keys()); }
 }
 
-const manager = new WppManager();
+class BotManager {
+  constructor() { this.map = new Map(); }
+  ensure(id) {
+    if (!this.map.has(id)) this.map.set(id, new BotProcess(id));
+    return this.map.get(id);
+  }
+  get(id) { return this.map.get(id) || null; }
+  all() { return Array.from(this.map.keys()); }
+  remove(id) {
+    const p = this.map.get(id);
+    if (p) { p.stop(); this.map.delete(id); }
+  }
+}
+const manager = new BotManager();
 
-// ------------------ Rotas REST ------------------
+// ---------------- REST ----------------
 
-// Cria/garante uma sessão
+// Criar/garantir sessão (spawna `node robo.js --session :id`)
 app.post('/wpp/session/:id', (req, res) => {
   const { id } = req.params;
-  const sess = manager.ensure(id);
-  res.json({ ok: true, id, status: sess.getStatus() });
+  const s = manager.ensure(id);
+  res.json({ ok: true, id, status: s.getStatus() });
 });
 
-// Status da sessão
+// Status
 app.get('/wpp/session/:id/status', (req, res) => {
   const { id } = req.params;
-  const sess = manager.get(id);
-  if (!sess) return res.status(404).json({ error: 'Sessão não existe' });
-  res.json({ ok: true, id, status: sess.getStatus() });
+  const s = manager.get(id);
+  if (!s) return res.status(404).json({ error: 'Sessão não existe' });
+  res.json({ ok: true, id, status: s.getStatus() });
 });
 
-// QR atual (PNG data URL). Útil se não usar Socket.IO
+// QR atual (PNG base64 data URL)
 app.get('/wpp/session/:id/qr', (req, res) => {
   const { id } = req.params;
-  const sess = manager.get(id);
-  if (!sess) return res.status(404).json({ error: 'Sessão não existe' });
-  res.json({ ok: true, id, status: sess.getStatus(), qr: sess.getQR() });
+  const s = manager.get(id);
+  if (!s) return res.status(404).json({ error: 'Sessão não existe' });
+  res.json({ ok: true, id, status: s.getStatus(), qr: s.getQR() });
 });
 
-// Enviar mensagem de texto
-app.post('/wpp/session/:id/send', async (req, res) => {
+// Parar sessão (mata o processo do bot)
+app.delete('/wpp/session/:id', (req, res) => {
   const { id } = req.params;
-  const { to, msg } = req.body || {};
-  const sess = manager.get(id);
-  if (!sess) return res.status(404).json({ error: 'Sessão não existe' });
-  if (!to || !msg) return res.status(400).json({ error: 'Body: { "to": "5511999999999", "msg": "Olá" }' });
-  try {
-    const r = await sess.sendText(to, msg);
-    res.json({ ok: true, result: r });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok: false, error: e?.message });
-  }
+  manager.remove(id);
+  res.json({ ok: true, id, status: 'stopped' });
 });
 
-// Logout + limpar credenciais
-app.delete('/wpp/session/:id', async (req, res) => {
-  const { id } = req.params;
-  const sess = manager.get(id);
-  if (!sess) return res.status(404).json({ error: 'Sessão não existe' });
-  await sess.logout();
-  res.json({ ok: true, id, status: 'disconnected' });
-});
-
-// Listar sessões
-app.get('/wpp/sessions', (_req, res) => {
-  res.json({ ok: true, sessions: manager.all() });
-});
-
-// ------------------ Socket.IO ------------------
+// ---------------- Socket.IO ----------------
 wppNSP.on('connection', (socket) => {
-  // Cliente pede para "assinar" uma sessão
   socket.on('subscribe', ({ sessionId }) => {
     if (!sessionId) return;
     socket.join(sessionId);
-    // Garante que a sessão exista
-    const sess = manager.ensure(sessionId);
-    // Manda snapshot inicial
-    socket.emit('status', { sessionId, status: sess.getStatus() });
-    if (sess.getQR()) socket.emit('qr', { sessionId, qr: sess.getQR() });
+    const s = manager.ensure(sessionId);
+    // Snapshot inicial
+    socket.emit('status', { sessionId, status: s.getStatus() });
+    if (s.getQR()) socket.emit('qr', { sessionId, qr: s.getQR() });
   });
 
   socket.on('unsubscribe', ({ sessionId }) => {
@@ -246,13 +165,8 @@ wppNSP.on('connection', (socket) => {
   });
 });
 
-// ------------------ Start/Stop ------------------
+// ---------------- Start ----------------
 server.listen(PORT, () => {
   console.log(`FireZap server on :${PORT}`);
   console.log(`Crie sessão: POST http://localhost:${PORT}/wpp/session/5511999999999`);
-});
-
-process.on('SIGINT', () => {
-  console.log('Encerrando...');
-  server.close(() => process.exit(0));
 });
