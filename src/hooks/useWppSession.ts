@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-type Status = 'starting' | 'qr' | 'ready' | 'disconnected' | 'error';
+type Status = 'starting' | 'qr' | 'ready' | 'authenticated' | 'disconnected' | 'error' | 'exited';
 
 export function useWppSession(sessionId: string, serverBase = '') {
   const [status, setStatus] = useState<Status>('starting');
