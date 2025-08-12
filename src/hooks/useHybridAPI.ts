@@ -82,7 +82,7 @@ export const useHybridAPI = () => {
   // Validar se número existe no WhatsApp (via backend híbrido)
   const validateNumber = async (sessionId: string, number: string) => {
     try {
-      const backendUrl = 'https://fire-zap-automator-production-d511.up.railway.app';
+      const backendUrl = 'https://fire-zap-automator-production.up.railway.app';
       const res = await fetch(`${backendUrl}/api/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,46 +100,119 @@ export const useHybridAPI = () => {
     }
   };
 
-  // Socket.IO para atualizações real-time
-  const connectWebSocket = () => {
-    const socketUrl = 'https://fire-zap-automator-production-d511.up.railway.app';
-    
-    const socket: Socket = io(socketUrl, {
+  // Socket.IO e integrações REST com backend híbrido Fire Zap
+  const API = 'https://fire-zap-automator-production.up.railway.app';
+
+  // Conectar Socket.IO no namespace /wpp e, opcionalmente, assinar uma sessão
+  const connectWebSocket = (sessionId?: string) => {
+    const socket: Socket = io(`${API}/wpp`, {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 3000
+      reconnectionDelay: 3000,
     });
-    
+
     socket.on('connect', () => {
-      console.log('🔗 Socket.IO conectado');
-      socket.emit('message', {
-        type: 'ping',
-        timestamp: new Date().toISOString()
-      });
+      console.log('🔗 Socket.IO conectado (namespace /wpp)');
+      if (sessionId) {
+        socket.emit('subscribe', { sessionId });
+      }
     });
-    
+
+    // Eventos esperados pelo backend híbrido
+    socket.on('qr', (payload: any) => {
+      try {
+        window.dispatchEvent(new CustomEvent('hybrid-update', { detail: { type: 'qr', ...payload } }));
+      } catch (error) {
+        console.error('Erro ao processar evento qr:', error);
+      }
+    });
+
+    socket.on('status', (payload: any) => {
+      try {
+        window.dispatchEvent(new CustomEvent('hybrid-update', { detail: { type: 'status', ...payload } }));
+      } catch (error) {
+        console.error('Erro ao processar evento status:', error);
+      }
+    });
+
+    // Fallback para servidores antigos que enviam "message"
     socket.on('message', (data: any) => {
       try {
         console.log('📨 Mensagem Socket.IO recebida:', data);
-        
-        // Emitir eventos customizados para componentes ouvirem
         window.dispatchEvent(new CustomEvent('hybrid-update', { detail: data }));
       } catch (error) {
         console.error('Erro ao processar mensagem Socket.IO:', error);
       }
     });
-    
+
     socket.on('disconnect', () => {
       console.log('❌ Socket.IO desconectado');
     });
-    
+
     socket.on('connect_error', (error) => {
       console.error('Erro no Socket.IO:', error);
     });
-    
+
     return socket;
+  };
+
+  // Criar/garantir sessão híbrida via REST
+  const createHybridSession = async (sessionId: string) => {
+    try {
+      const res = await fetch(`${API}/api/sessions/${encodeURIComponent(sessionId)}`, { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Erro ao criar sessão híbrida:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Aquecimento: bot → target
+  const startWarmupBot = async (
+    sessionId: string,
+    target: string,
+    scriptName: string = 'default',
+    pace: 'slow' | 'normal' | 'fast' = 'slow'
+  ) => {
+    try {
+      const res = await fetch(`${API}/api/warmup/bot/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, target, scriptName, pace }),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.ok === false) throw new Error(json?.error || `HTTP ${res.status}`);
+      return { success: true, data: json };
+    } catch (error: any) {
+      console.error('Erro ao iniciar warmup bot:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Aquecimento: sessão A ↔ sessão B (n2n)
+  const startWarmupN2N = async (
+    a: string,
+    b: string,
+    rounds: number = 6,
+    pace: 'slow' | 'normal' | 'fast' = 'normal'
+  ) => {
+    try {
+      const res = await fetch(`${API}/api/warmup/n2n/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ a, b, rounds, pace }),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.ok === false) throw new Error(json?.error || `HTTP ${res.status}`);
+      return { success: true, data: json };
+    } catch (error: any) {
+      console.error('Erro ao iniciar warmup n2n:', error);
+      return { success: false, error: error.message };
+    }
   };
 
   return {
@@ -149,6 +222,10 @@ export const useHybridAPI = () => {
     sendBusinessMessage,
     getSessionStatus,
     connectWebSocket,
-    validateNumber
+    validateNumber,
+    // Novos helpers híbridos
+    createHybridSession,
+    startWarmupBot,
+    startWarmupN2N,
   };
 };
