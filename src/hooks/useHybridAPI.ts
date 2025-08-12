@@ -73,8 +73,29 @@ export const useHybridAPI = () => {
       
       if (error) throw error;
       return { success: true, data };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao obter status da sessão:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Validar se número existe no WhatsApp (via backend híbrido)
+  const validateNumber = async (sessionId: string, number: string) => {
+    try {
+      const backendUrl = 'https://fire-zap-automator-production-d511.up.railway.app';
+      const res = await fetch(`${backendUrl}/api/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, number })
+      });
+      const json = await res.json();
+      if (!res.ok || json?.ok === false) {
+        const msg = json?.error || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return { success: true, data: json };
+    } catch (error: any) {
+      console.error('Erro ao validar número:', error);
       return { success: false, error: error.message };
     }
   };
@@ -127,6 +148,7 @@ export const useHybridAPI = () => {
     sendPersonalMessage,
     sendBusinessMessage,
     getSessionStatus,
-    connectWebSocket
+    connectWebSocket,
+    validateNumber
   };
 };

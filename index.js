@@ -7,6 +7,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
@@ -45,6 +46,38 @@ io.on('connection', (socket) => {
   console.log('🟢 Cliente frontend conectado');
   if (qrImage) socket.emit('qr', qrImage);
   if (isReady) socket.emit('ready', 'connected');
+});
+
+app.post('/api/validate', async (req, res) => {
+  try {
+    const { sessionId, number } = req.body || {};
+    if (!number) return res.status(400).json({ ok: false, error: 'Body: { number }' });
+
+    if (!isReady) {
+      return res.status(400).json({ ok: false, error: 'Sessão não está pronta (status=not_ready)' });
+    }
+
+    const cleanNumber = String(number).replace(/\D/g, '');
+    const jid = number.includes('@') ? number : `${cleanNumber}@c.us`;
+
+    let exists = false;
+    try {
+      // Preferência: getNumberId (retorna objeto se existir)
+      const info = await client.getNumberId(cleanNumber);
+      exists = !!info;
+    } catch (e) {
+      try {
+        // Fallback: isRegisteredUser
+        exists = await client.isRegisteredUser(jid);
+      } catch (err) {
+        return res.status(500).json({ ok: false, error: err.message || 'validate_failed' });
+      }
+    }
+
+    return res.json({ ok: true, number: cleanNumber, exists });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message || 'internal_error' });
+  }
 });
 
 app.get('/', (req, res) => {
